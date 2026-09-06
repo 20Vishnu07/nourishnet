@@ -135,6 +135,66 @@ def test_auth_verify_new_user_requires_name_and_role():
     assert "must provide name and role" in response.json()["detail"]
 
 
+def test_auth_register_and_login():
+    # 1. Register new donor
+    reg_res = client.post(
+        "/auth/register",
+        json={
+            "email": "donor1@example.com",
+            "password": "strongpassword123",
+            "name": "Sunshine Bakery",
+            "role": "donor",
+            "phone": "+919876543210",
+            "org_name": "Sunshine Cafe Pvt Ltd",
+            "address": "12 Anna Nagar, Chennai",
+        },
+    )
+    assert reg_res.status_code == 200
+    data = reg_res.json()
+    assert data["is_new_user"] is True
+    assert data["user"]["email"] == "donor1@example.com"
+    assert data["user"]["name"] == "Sunshine Bakery"
+    assert data["user"]["org_name"] == "Sunshine Cafe Pvt Ltd"
+    assert "access_token" in data
+
+    # 2. Duplicate registration fails
+    dup_res = client.post(
+        "/auth/register",
+        json={
+            "email": "donor1@example.com",
+            "password": "differentpass",
+            "name": "Duplicate",
+            "role": "donor",
+        },
+    )
+    assert dup_res.status_code == 400
+    assert "already registered" in dup_res.json()["detail"]
+
+    # 3. Successful login with correct credentials
+    login_res = client.post(
+        "/auth/login",
+        json={
+            "email": "donor1@example.com",
+            "password": "strongpassword123",
+        },
+    )
+    assert login_res.status_code == 200
+    login_data = login_res.json()
+    assert login_data["user"]["name"] == "Sunshine Bakery"
+    assert login_data["is_new_user"] is False
+
+    # 4. Failed login with wrong password
+    bad_res = client.post(
+        "/auth/login",
+        json={
+            "email": "donor1@example.com",
+            "password": "wrongpassword",
+        },
+    )
+    assert bad_res.status_code == 401
+
+
+
 def test_auth_me():
     _, token = _create_user_and_get_token()
     response = client.get("/auth/me", headers=_auth_header(token))

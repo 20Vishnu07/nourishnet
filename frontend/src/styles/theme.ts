@@ -1,6 +1,7 @@
-﻿export const colors = {
+export const colors = {
   primary: "#059669",        // Forest Emerald
   primaryHover: "#047857",   // Deep Forest
+  primaryDark: "#047857",    // Deep Emerald
   primaryLight: "#ecfdf5",   // Pale Mint Tint
   primaryGlow: "rgba(16, 185, 129, 0.2)",
   

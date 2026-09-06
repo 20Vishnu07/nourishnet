@@ -14,7 +14,8 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.user import User, UserRole
-from app.schemas import UserResponse
+from app.schemas import UserResponse, UserRegisterRequest, UserLoginRequest
+from app.auth.security import hash_password, verify_password
 from app.auth.firebase import verify_firebase_token
 from app.auth.jwt_handler import create_access_token
 from app.auth.dependencies import get_current_user
@@ -40,7 +41,65 @@ class TokenResponse(BaseModel):
     is_new_user: bool
 
 
+@router.post("/register", response_model=TokenResponse)
+def register_user(request: UserRegisterRequest, db: Session = Depends(get_db)):
+    """Register a new user with email and password."""
+    clean_email = request.email.lower().strip()
+    existing = db.query(User).filter(User.email == clean_email).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email is already registered. Please sign in instead.",
+        )
+
+    new_user = User(
+        email=clean_email,
+        hashed_password=hash_password(request.password),
+        name=request.name.strip(),
+        role=request.role,
+        phone=request.phone.strip() if request.phone else None,
+        org_name=request.org_name.strip() if request.org_name else None,
+        address=request.address.strip() if request.address else None,
+        language_pref=request.language_pref,
+    )
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
+
+    access_token = create_access_token(
+        data={"user_id": new_user.id, "role": new_user.role.value}
+    )
+    return TokenResponse(
+        access_token=access_token,
+        user=UserResponse.model_validate(new_user),
+        is_new_user=True,
+    )
+
+
+@router.post("/login", response_model=TokenResponse)
+def login_user(request: UserLoginRequest, db: Session = Depends(get_db)):
+    """Sign in an existing user with email and password."""
+    clean_email = request.email.lower().strip()
+    user = db.query(User).filter(User.email == clean_email).first()
+
+    if not user or not user.hashed_password or not verify_password(request.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+        )
+
+    access_token = create_access_token(
+        data={"user_id": user.id, "role": user.role.value}
+    )
+    return TokenResponse(
+        access_token=access_token,
+        user=UserResponse.model_validate(user),
+        is_new_user=False,
+    )
+
+
 @router.post("/verify", response_model=TokenResponse)
+
 def verify_token(request: TokenVerifyRequest, db: Session = Depends(get_db)):
     """
     Verify a Firebase ID token and issue a JWT.
@@ -121,6 +180,9 @@ def get_me(current_user: User = Depends(get_current_user)):
 
 class ProfileUpdateRequest(BaseModel):
     name: str | None = None
+    phone: str | None = None
+    org_name: str | None = None
+    address: str | None = None
     language_pref: str | None = None
 
 
@@ -130,9 +192,15 @@ def update_profile(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
-    """Update user profile fields such as language preference."""
+    """Update user profile fields."""
     if updates.name is not None:
         current_user.name = updates.name
+    if updates.phone is not None:
+        current_user.phone = updates.phone
+    if updates.org_name is not None:
+        current_user.org_name = updates.org_name
+    if updates.address is not None:
+        current_user.address = updates.address
     if updates.language_pref is not None:
         current_user.language_pref = updates.language_pref
 

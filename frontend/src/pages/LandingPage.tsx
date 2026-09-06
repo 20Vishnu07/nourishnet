@@ -1,21 +1,14 @@
-import { useState, useRef, useCallback, useEffect, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { colors, shadows } from "../styles/theme";
 import LanguageSwitcher from "../components/LanguageSwitcher";
-import {
-  auth,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
-  firebaseConfig,
-  type ConfirmationResult,
-} from "../config/firebase";
 import { useAuth, type UserRole } from "../contexts/AuthContext";
 
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { verifyAndLogin, error, clearError, isLoading, appUser } = useAuth();
+  const { login, register, verifyAndLogin, error, clearError, isLoading, appUser } = useAuth();
 
   // If logged in, redirect straight to dashboard
   useEffect(() => {
@@ -26,244 +19,78 @@ export default function LandingPage() {
 
   // Auth modal states
   const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [selectedRole, setSelectedRole] = useState<UserRole>("donor");
-  const [authStep, setAuthStep] = useState<"phone" | "otp" | "role">("phone");
-  const [phone, setPhone] = useState("");
-  const [otp, setOtp] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [orgName, setOrgName] = useState("");
+  const [address, setAddress] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-  const [isSimulatedAuth, setIsSimulatedAuth] = useState(false);
-
-  const recaptchaRef = useRef<HTMLDivElement>(null);
-  const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
   const displayError = localError || error;
 
   const openAuthWithRole = (role: UserRole) => {
     setSelectedRole(role);
+    setAuthMode("signup");
     setLocalError(null);
     clearError();
     setIsAuthOpen(true);
   };
 
-  const setupRecaptcha = useCallback(() => {
-    if (recaptchaVerifierRef.current) return;
-    const container = recaptchaRef.current || document.getElementById("recaptcha-container");
-    if (!container) return;
-
-    try {
-      recaptchaVerifierRef.current = new RecaptchaVerifier(
-        auth,
-        container as HTMLElement,
-        {
-          size: "invisible",
-          callback: () => {
-            // Invisible reCAPTCHA resolved
-          },
-        }
-      );
-    } catch (err) {
-      console.error("RecaptchaVerifier setup failed:", err);
-    }
-  }, []);
-
-  const handleSendOTP = async (e: FormEvent) => {
+  const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
     setLocalError(null);
     clearError();
 
-    if (!phone || phone.trim().length < 10) {
-      setLocalError(t("auth.invalidPhone") || "Please enter a valid 10-digit mobile number");
-      return;
-    }
-
-    const cleanPhone = phone.trim().replace(/[\s-]/g, "");
-    const formattedPhone = cleanPhone.startsWith("+") ? cleanPhone : `+91${cleanPhone}`;
-
-    const isFirebaseConfigured =
-      Boolean(firebaseConfig.apiKey) &&
-      !firebaseConfig.apiKey.includes("dummy") &&
-      !firebaseConfig.apiKey.includes("ExampleApiKey");
-
-    if (!isFirebaseConfigured) {
-      setIsSimulatedAuth(true);
-      setAuthStep("otp");
-      setOtp("123456");
+    if (!email.trim() || !password) {
+      setLocalError("Please enter both email and password.");
       return;
     }
 
     try {
-      if (recaptchaVerifierRef.current) {
-        try {
-          recaptchaVerifierRef.current.clear();
-        } catch { /* ignore */ }
-        recaptchaVerifierRef.current = null;
-      }
-
-      setupRecaptcha();
-      if (!recaptchaVerifierRef.current) {
-        const container = recaptchaRef.current || document.getElementById("recaptcha-container");
-        if (container) {
-          recaptchaVerifierRef.current = new RecaptchaVerifier(auth, container as HTMLElement, {
-            size: "invisible",
-          });
-        }
-      }
-
-      if (!recaptchaVerifierRef.current) {
-        setLocalError("Verification container not ready. Please refresh the page.");
-        return;
-      }
-
-      const result = await signInWithPhoneNumber(
-        auth,
-        formattedPhone,
-        recaptchaVerifierRef.current
-      );
-      setConfirmationResult(result);
-      setAuthStep("otp");
-    } catch (err: any) {
-      console.error("Firebase signInWithPhoneNumber error:", err);
-      if (recaptchaVerifierRef.current) {
-        try {
-          recaptchaVerifierRef.current.clear();
-        } catch { /* ignore */ }
-        recaptchaVerifierRef.current = null;
-      }
-
-      const code = err?.code || "";
-      const message = err instanceof Error ? err.message : "Failed to send OTP";
-
-      if (code === "auth/unauthorized-domain" || message.includes("unauthorized-domain")) {
-        setLocalError(
-          "Domain not authorized in Firebase Console. Please add 'nourishnet-kappa.vercel.app' in Firebase Console > Authentication > Settings > Authorized domains."
-        );
-      } else if (code === "auth/operation-not-allowed" || message.includes("operation-not-allowed")) {
-        setLocalError(
-          "Phone Auth is not enabled in Firebase Console. Go to Authentication > Sign-in method > Phone and enable it."
-        );
-      } else if (code === "auth/too-many-requests" || message.includes("too-many-requests") || message.includes("quota-exceeded")) {
-        setLocalError(
-          "Firebase SMS limit reached. On Firebase Spark plan, real SMS is throttled by Google. Please use Firebase Test Numbers (e.g. +91 9876543210 / OTP 123456) or upgrade to Blaze."
-        );
-      } else if (code === "auth/invalid-phone-number" || message.includes("invalid-phone-number")) {
-        setLocalError(t("auth.invalidPhone") || "Invalid phone number. Ensure it includes 10 digits or country code.");
-      } else if (code === "auth/captcha-check-failed" || message.includes("captcha")) {
-        setLocalError("reCAPTCHA check failed. Please refresh the page and try again.");
-      } else {
-        setLocalError(message);
-      }
-    }
-  };
-
-  const handleVerifyOTP = async (e: FormEvent) => {
-    e.preventDefault();
-    setLocalError(null);
-    clearError();
-
-    const cleanPhone = phone.trim().replace(/[\s-]/g, "");
-    const formattedPhone = cleanPhone.startsWith("+") ? cleanPhone : `+91${cleanPhone}`;
-    const defaultName = name.trim() || `User (${selectedRole.toUpperCase()})`;
-
-    if (isSimulatedAuth) {
-      if (!otp || otp.length < 6) {
-        setLocalError(t("auth.invalidOtp"));
-        return;
-      }
-      try {
-        await verifyAndLogin(`phone_${cleanPhone}`, defaultName, selectedRole, i18n.language, formattedPhone);
-        setIsAuthOpen(false);
-        navigate("/dashboard", { replace: true });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "";
-        if (message.includes("must provide name and role")) {
-          setAuthStep("role");
-          return;
-        }
-        setLocalError(message || "Login failed");
-      }
-      return;
-    }
-
-    if (!confirmationResult) {
-      setLocalError(t("auth.codeExpired"));
-      setAuthStep("phone");
-      return;
-    }
-
-    if (!otp || otp.length < 6) {
-      setLocalError(t("auth.invalidOtp"));
-      return;
-    }
-
-    try {
-      const userCredential = await confirmationResult.confirm(otp);
-      const idToken = await userCredential.user.getIdToken();
-
-      try {
-        await verifyAndLogin(idToken, defaultName, selectedRole, i18n.language, formattedPhone);
-        setIsAuthOpen(false);
-        navigate("/dashboard", { replace: true });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "";
-        if (message.includes("must provide name and role")) {
-          setAuthStep("role");
-          return;
-        }
-        setLocalError(message || "Backend authentication failed. Please try again.");
-      }
+      await login(email, password);
+      setIsAuthOpen(false);
+      navigate("/dashboard", { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "OTP verification failed";
-      if (message.includes("invalid-verification-code")) {
-        setLocalError(t("auth.invalidOtp") || "Invalid OTP code entered. Please try again.");
-      } else if (message.includes("code-expired")) {
-        setLocalError(t("auth.codeExpired") || "OTP code has expired. Please request a new code.");
-        setAuthStep("phone");
-      } else if (!message.includes("must provide name and role")) {
-        setLocalError(message);
-      }
+      setLocalError(err instanceof Error ? err.message : "Sign in failed");
     }
   };
 
-  const handleRoleSelection = async (e: FormEvent) => {
+  const handleSignUp = async (e: FormEvent) => {
     e.preventDefault();
     setLocalError(null);
     clearError();
 
     if (!name.trim()) {
-      setLocalError(t("auth.namePlaceholder"));
+      setLocalError("Please enter your full name.");
       return;
     }
-
-    const cleanPhone = phone.trim().replace(/[\s-]/g, "");
-    const formattedPhone = cleanPhone.startsWith("+") ? cleanPhone : `+91${cleanPhone}`;
-
-    if (isSimulatedAuth) {
-      try {
-        await verifyAndLogin(`phone_${cleanPhone}`, name.trim(), selectedRole, i18n.language, formattedPhone);
-        setIsAuthOpen(false);
-        navigate("/dashboard", { replace: true });
-      } catch (err) {
-        setLocalError(err instanceof Error ? err.message : "Registration failed");
-      }
+    if (!email.trim() || !email.includes("@")) {
+      setLocalError("Please enter a valid email address.");
+      return;
+    }
+    if (!password || password.length < 6) {
+      setLocalError("Password must be at least 6 characters.");
       return;
     }
 
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        setLocalError(t("auth.codeExpired"));
-        setAuthStep("phone");
-        return;
-      }
-      const idToken = await user.getIdToken();
-      await verifyAndLogin(idToken, name.trim(), selectedRole, i18n.language, formattedPhone);
+      await register({
+        name: name.trim(),
+        email: email.trim(),
+        password,
+        role: selectedRole,
+        phone: phone.trim() || undefined,
+        org_name: orgName.trim() || undefined,
+        address: address.trim() || undefined,
+        language_pref: i18n.language || "en",
+      });
       setIsAuthOpen(false);
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Registration failed";
-      setLocalError(message);
+      setLocalError(err instanceof Error ? err.message : "Registration failed");
     }
   };
 
@@ -719,90 +546,129 @@ export default function LandingPage() {
               </div>
             )}
 
-            {/* ROLE SELECTOR BUTTONS */}
-            <div style={{ marginBottom: "1.25rem" }}>
-              <label style={landingStyles.fieldLabel}>{t("landing.selectRolePrompt")}</label>
-              <div style={landingStyles.modalRoleTabs}>
-                {(["donor", "ngo", "volunteer"] as const).map((r) => (
-                  <button
-                    key={r}
-                    type="button"
-                    onClick={() => setSelectedRole(r)}
-                    style={{
-                      ...landingStyles.modalRoleTab,
-                      ...(selectedRole === r ? landingStyles.modalRoleTabActive : {}),
-                    }}
-                  >
-                    {r === "donor" && `🍲 ${t("auth.donorRole")}`}
-                    {r === "ngo" && `🏢 ${t("auth.ngoRole")}`}
-                    {r === "volunteer" && `🚗 ${t("auth.volunteerRole")}`}
-                  </button>
-                ))}
-              </div>
+            {/* AUTH MODE TOGGLE TABS */}
+            <div style={{
+              display: "flex",
+              background: "#f1f5f9",
+              padding: "4px",
+              borderRadius: "10px",
+              marginBottom: "1.25rem",
+              gap: "4px",
+            }}>
+              <button
+                type="button"
+                onClick={() => { setAuthMode("signin"); setLocalError(null); clearError(); }}
+                style={{
+                  flex: 1,
+                  padding: "8px",
+                  border: "none",
+                  background: authMode === "signin" ? "#ffffff" : "transparent",
+                  color: authMode === "signin" ? colors.primary : "#64748b",
+                  borderRadius: "7px",
+                  fontWeight: 700,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  boxShadow: authMode === "signin" ? shadows.sm : "none",
+                  transition: "all 0.2s",
+                }}
+              >
+                {t("auth.signIn")}
+              </button>
+              <button
+                type="button"
+                onClick={() => { setAuthMode("signup"); setLocalError(null); clearError(); }}
+                style={{
+                  flex: 1,
+                  padding: "8px",
+                  border: "none",
+                  background: authMode === "signup" ? "#ffffff" : "transparent",
+                  color: authMode === "signup" ? colors.primary : "#64748b",
+                  borderRadius: "7px",
+                  fontWeight: 700,
+                  fontSize: "0.85rem",
+                  cursor: "pointer",
+                  boxShadow: authMode === "signup" ? shadows.sm : "none",
+                  transition: "all 0.2s",
+                }}
+              >
+                {t("auth.signUp")}
+              </button>
             </div>
 
-            {/* STEP 1: PHONE NUMBER */}
-            {authStep === "phone" && (
-              <form onSubmit={handleSendOTP} style={landingStyles.modalForm}>
-                <label style={landingStyles.fieldLabel}>{t("auth.phoneLabel")}</label>
+            {/* SIGN IN FORM */}
+            {authMode === "signin" && (
+              <form onSubmit={handleSignIn} style={landingStyles.modalForm}>
+                <label style={landingStyles.fieldLabel}>{t("auth.emailLabel")}</label>
                 <input
-                  type="tel"
-                  placeholder={t("auth.phonePlaceholder")}
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  type="email"
+                  placeholder={t("auth.emailPlaceholder")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   style={landingStyles.modalInput}
                   disabled={isLoading}
+                  required
                 />
-                <button
-                  type="submit"
-                  style={landingStyles.modalSubmitBtn}
-                  disabled={isLoading}
-                >
-                  {isLoading ? t("auth.sending") : t("auth.sendOtp")}
-                </button>
-              </form>
-            )}
 
-            {/* STEP 2: ENTER OTP */}
-            {authStep === "otp" && (
-              <form onSubmit={handleVerifyOTP} style={landingStyles.modalForm}>
-                <label style={landingStyles.fieldLabel}>{t("auth.enterOtp", { phone })}</label>
+                <label style={landingStyles.fieldLabel}>{t("auth.passwordLabel")}</label>
                 <input
-                  type="text"
-                  placeholder={t("auth.otpPlaceholder")}
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value)}
-                  maxLength={6}
+                  type="password"
+                  placeholder={t("auth.passwordPlaceholder")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   style={landingStyles.modalInput}
                   disabled={isLoading}
+                  required
                 />
+
                 <button
                   type="submit"
                   style={landingStyles.modalSubmitBtn}
                   disabled={isLoading}
                 >
-                  {isLoading ? t("auth.verifying") : t("auth.verifyOtp")}
+                  {isLoading ? t("auth.signingIn") : t("auth.signIn")}
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => {
-                    setAuthStep("phone");
-                    setOtp("");
-                    recaptchaVerifierRef.current = null;
+                  onClick={() => { setAuthMode("signup"); setLocalError(null); }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: colors.primaryDark,
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    textAlign: "center",
+                    padding: "4px",
                   }}
-                  style={landingStyles.modalBackBtn}
                 >
-                  {t("auth.backToPhone")}
+                  {t("auth.noAccount")}
                 </button>
               </form>
             )}
 
-            {/* STEP 3: PROFILE SETUP */}
-            {authStep === "role" && (
-              <form onSubmit={handleRoleSelection} style={landingStyles.modalForm}>
-                <h4 style={{ margin: "0 0 0.5rem", color: colors.textDark }}>
-                  {t("auth.profileSetup")}
-                </h4>
+            {/* SIGN UP FORM */}
+            {authMode === "signup" && (
+              <form onSubmit={handleSignUp} style={landingStyles.modalForm}>
+                <label style={landingStyles.fieldLabel}>{t("auth.iAmA")}</label>
+                <div style={landingStyles.modalRoleTabs}>
+                  {(["donor", "ngo", "volunteer"] as const).map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      onClick={() => setSelectedRole(r)}
+                      style={{
+                        ...landingStyles.modalRoleTab,
+                        ...(selectedRole === r ? landingStyles.modalRoleTabActive : {}),
+                      }}
+                    >
+                      {r === "donor" && `🍲 ${t("auth.donorRole")}`}
+                      {r === "ngo" && `🏢 ${t("auth.ngoRole")}`}
+                      {r === "volunteer" && `🚗 ${t("auth.volunteerRole")}`}
+                    </button>
+                  ))}
+                </div>
+
                 <label style={landingStyles.fieldLabel}>{t("auth.yourName")}</label>
                 <input
                   type="text"
@@ -811,19 +677,99 @@ export default function LandingPage() {
                   onChange={(e) => setName(e.target.value)}
                   style={landingStyles.modalInput}
                   disabled={isLoading}
+                  required
                 />
+
+                <label style={landingStyles.fieldLabel}>{t("auth.emailLabel")}</label>
+                <input
+                  type="email"
+                  placeholder={t("auth.emailPlaceholder")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={landingStyles.modalInput}
+                  disabled={isLoading}
+                  required
+                />
+
+                <label style={landingStyles.fieldLabel}>{t("auth.passwordLabel")}</label>
+                <input
+                  type="password"
+                  placeholder={t("auth.passwordPlaceholder")}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  style={landingStyles.modalInput}
+                  disabled={isLoading}
+                  required
+                />
+
+                {(selectedRole === "ngo" || selectedRole === "donor") && (
+                  <>
+                    <label style={landingStyles.fieldLabel}>{t("auth.orgLabel")}</label>
+                    <input
+                      type="text"
+                      placeholder={t("auth.orgPlaceholder")}
+                      value={orgName}
+                      onChange={(e) => setOrgName(e.target.value)}
+                      style={landingStyles.modalInput}
+                      disabled={isLoading}
+                    />
+                  </>
+                )}
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                  <div>
+                    <label style={landingStyles.fieldLabel}>{t("auth.phoneOptional")}</label>
+                    <input
+                      type="tel"
+                      placeholder={t("auth.phoneOptionalPlaceholder")}
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      style={landingStyles.modalInput}
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div>
+                    <label style={landingStyles.fieldLabel}>{t("auth.addressLabel")}</label>
+                    <input
+                      type="text"
+                      placeholder={t("auth.addressPlaceholder")}
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      style={landingStyles.modalInput}
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+
                 <button
                   type="submit"
                   style={landingStyles.modalSubmitBtn}
                   disabled={isLoading}
                 >
-                  {isLoading ? t("auth.settingUp") : t("auth.getStarted")}
+                  {isLoading ? t("auth.signingUp") : t("auth.signUp")}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setAuthMode("signin"); setLocalError(null); }}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: colors.primaryDark,
+                    fontSize: "0.82rem",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    textAlign: "center",
+                    padding: "4px",
+                  }}
+                >
+                  {t("auth.haveAccount")}
                 </button>
               </form>
             )}
 
             {/* QUICK DEMO LOGIN SHORTCUTS */}
-            <div style={{ marginTop: "1.5rem", borderTop: `1px solid ${colors.border}`, paddingTop: "1rem" }}>
+            <div style={{ marginTop: "1.25rem", borderTop: `1px solid ${colors.border}`, paddingTop: "0.75rem" }}>
               <p style={{ fontSize: "0.75rem", color: colors.textMuted, textAlign: "center", marginBottom: "0.5rem" }}>
                 {t("landing.orQuickDemo")}
               </p>
@@ -855,7 +801,6 @@ export default function LandingPage() {
           </div>
         </div>
       )}
-      <div id="recaptcha-container" ref={recaptchaRef} />
     </div>
   );
 }

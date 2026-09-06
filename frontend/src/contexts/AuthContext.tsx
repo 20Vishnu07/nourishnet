@@ -16,12 +16,26 @@ export type UserRole = "donor" | "ngo" | "volunteer";
 
 export interface AppUser {
   id: number;
-  phone: string;
-  role: UserRole;
   name: string;
+  email?: string | null;
+  phone?: string | null;
+  role: UserRole;
+  org_name?: string | null;
+  address?: string | null;
   language_pref: string;
-  firebase_uid: string | null;
+  firebase_uid?: string | null;
   created_at: string;
+}
+
+export interface RegisterPayload {
+  name: string;
+  email: string;
+  password: string;
+  role: UserRole;
+  phone?: string;
+  org_name?: string;
+  address?: string;
+  language_pref?: string;
 }
 
 interface AuthState {
@@ -34,6 +48,8 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
+  login: (email: string, password: string) => Promise<void>;
+  register: (payload: RegisterPayload) => Promise<void>;
   verifyAndLogin: (
     idToken: string,
     name?: string,
@@ -98,6 +114,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState((prev) => ({ ...prev, firebaseUser: user }));
     });
     return unsubscribe;
+  }, []);
+
+  const login = useCallback(async (email: string, password: string) => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const response = await apiFetch<TokenResponse>("/auth/login", {
+        method: "POST",
+        body: {
+          email: email.trim().toLowerCase(),
+          password,
+        },
+      });
+
+      localStorage.setItem("nourishnet_token", response.access_token);
+      localStorage.setItem("nourishnet_user", JSON.stringify(response.user));
+
+      if (response.user.language_pref) {
+        i18n.changeLanguage(response.user.language_pref);
+      }
+
+      setState((prev) => ({
+        ...prev,
+        token: response.access_token,
+        appUser: response.user,
+        isNewUser: false,
+        isLoading: false,
+        error: null,
+      }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Login failed";
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: message,
+      }));
+      throw err;
+    }
+  }, []);
+
+  const register = useCallback(async (payload: RegisterPayload) => {
+    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    try {
+      const response = await apiFetch<TokenResponse>("/auth/register", {
+        method: "POST",
+        body: {
+          name: payload.name.trim(),
+          email: payload.email.trim().toLowerCase(),
+          password: payload.password,
+          role: payload.role,
+          phone: payload.phone?.trim() || undefined,
+          org_name: payload.org_name?.trim() || undefined,
+          address: payload.address?.trim() || undefined,
+          language_pref: payload.language_pref || i18n.language || "en",
+        },
+      });
+
+      localStorage.setItem("nourishnet_token", response.access_token);
+      localStorage.setItem("nourishnet_user", JSON.stringify(response.user));
+
+      if (response.user.language_pref) {
+        i18n.changeLanguage(response.user.language_pref);
+      }
+
+      setState((prev) => ({
+        ...prev,
+        token: response.access_token,
+        appUser: response.user,
+        isNewUser: true,
+        isLoading: false,
+        error: null,
+      }));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Registration failed";
+      setState((prev) => ({
+        ...prev,
+        isLoading: false,
+        error: message,
+      }));
+      throw err;
+    }
   }, []);
 
   const verifyAndLogin = useCallback(
@@ -199,7 +295,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, verifyAndLogin, updateLanguagePref, logout, clearError }}
+      value={{
+        ...state,
+        login,
+        register,
+        verifyAndLogin,
+        updateLanguagePref,
+        logout,
+        clearError,
+      }}
     >
       {children}
     </AuthContext.Provider>

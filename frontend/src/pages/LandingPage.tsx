@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, type FormEvent } from "react";
+import { useState, useRef, useCallback, useEffect, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { colors, shadows } from "../styles/theme";
@@ -16,10 +16,12 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const { verifyAndLogin, error, clearError, isLoading, appUser } = useAuth();
 
-  // If already logged in, redirect to dashboard
-  if (appUser) {
-    navigate("/");
-  }
+  // If logged in, redirect straight to dashboard
+  useEffect(() => {
+    if (appUser) {
+      navigate("/dashboard", { replace: true });
+    }
+  }, [appUser, navigate]);
 
   // Auth modal states
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -129,14 +131,17 @@ export default function LandingPage() {
     setLocalError(null);
     clearError();
 
+    const defaultName = name.trim() || `User (${selectedRole.toUpperCase()})`;
+
     if (isSimulatedAuth) {
       if (!otp || otp.length < 6) {
         setLocalError(t("auth.invalidOtp"));
         return;
       }
       try {
-        await verifyAndLogin(`phone_${phone}`, undefined, undefined, i18n.language);
+        await verifyAndLogin(`phone_${phone}`, defaultName, selectedRole, i18n.language);
         setIsAuthOpen(false);
+        navigate("/dashboard", { replace: true });
       } catch (err) {
         const message = err instanceof Error ? err.message : "";
         if (message.includes("must provide name and role")) {
@@ -164,8 +169,9 @@ export default function LandingPage() {
       const idToken = await userCredential.user.getIdToken();
 
       try {
-        await verifyAndLogin(idToken, undefined, undefined, i18n.language);
+        await verifyAndLogin(idToken, defaultName, selectedRole, i18n.language);
         setIsAuthOpen(false);
+        navigate("/dashboard", { replace: true });
       } catch (err) {
         const message = err instanceof Error ? err.message : "";
         if (message.includes("must provide name and role")) {
@@ -201,6 +207,7 @@ export default function LandingPage() {
       try {
         await verifyAndLogin(`phone_${phone}`, name, selectedRole, i18n.language);
         setIsAuthOpen(false);
+        navigate("/dashboard", { replace: true });
       } catch (err) {
         setLocalError(err instanceof Error ? err.message : "Registration failed");
       }
@@ -217,6 +224,7 @@ export default function LandingPage() {
       const idToken = await user.getIdToken();
       await verifyAndLogin(idToken, name, selectedRole, i18n.language);
       setIsAuthOpen(false);
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Registration failed";
       setLocalError(message);
@@ -236,6 +244,7 @@ export default function LandingPage() {
     try {
       await verifyAndLogin(mockUid, demoNames[role], role, i18n.language);
       setIsAuthOpen(false);
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       const message = err instanceof Error ? err.message : "Demo login failed";
       setLocalError(message);

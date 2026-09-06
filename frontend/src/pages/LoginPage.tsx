@@ -118,13 +118,15 @@ export default function LoginPage() {
     setLocalError(null);
     clearError();
 
+    const defaultName = name.trim() || `User (${role.toUpperCase()})`;
+
     if (isSimulatedAuth) {
       if (!otp || otp.length < 6) {
         setLocalError(t("auth.invalidOtp"));
         return;
       }
       try {
-        await verifyAndLogin(`phone_${phone}`, undefined, undefined, i18n.language);
+        await verifyAndLogin(`phone_${phone}`, defaultName, role, i18n.language);
       } catch (err) {
         const message = err instanceof Error ? err.message : "";
         if (message.includes("must provide name and role")) {
@@ -152,7 +154,7 @@ export default function LoginPage() {
       const idToken = await userCredential.user.getIdToken();
 
       try {
-        await verifyAndLogin(idToken, undefined, undefined, i18n.language);
+        await verifyAndLogin(idToken, defaultName, role, i18n.language);
       } catch (err) {
         const message = err instanceof Error ? err.message : "";
         if (message.includes("must provide name and role")) {

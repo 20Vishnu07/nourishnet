@@ -22,7 +22,7 @@ interface Donation {
 export default function DonorDashboard() {
   const { t } = useTranslation();
   const { appUser, token } = useAuth();
-  const { lat, lng } = useGeolocation();
+  const { lat, lng, isAutoDetected, requestLocation } = useGeolocation();
 
   const [foodType, setFoodType] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -30,6 +30,14 @@ export default function DonorDashboard() {
   const [expiryHours, setExpiryHours] = useState("6");
   const [pickupLat, setPickupLat] = useState(lat);
   const [pickupLng, setPickupLng] = useState(lng);
+
+  // Automatically update pickup coordinates when GPS/IP auto-detection succeeds
+  useEffect(() => {
+    if (lat && lng) {
+      setPickupLat(lat);
+      setPickupLng(lng);
+    }
+  }, [lat, lng]);
   const [myDonations, setMyDonations] = useState<Donation[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -282,6 +290,8 @@ export default function DonorDashboard() {
               setPickupLat(newLat);
               setPickupLng(newLng);
             }}
+            onDetectLocation={requestLocation}
+            isAutoDetected={isAutoDetected}
           />
         </div>
 

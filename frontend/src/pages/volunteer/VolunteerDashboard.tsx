@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
 import { apiFetch } from "../../config/api";
+import { useGeolocation } from "../../hooks/useGeolocation";
 import { useRealtimeUpdates } from "../../hooks/useRealtimeUpdates";
 
 interface Claim {
@@ -22,11 +23,16 @@ interface Donation {
   pickup_lat: number;
   pickup_lng: number;
   expiry_time: string;
+  donor?: {
+    name: string;
+    phone: string;
+  } | null;
 }
 
 export default function VolunteerDashboard() {
   const { t } = useTranslation();
   const { appUser, token } = useAuth();
+  const { lat: userLat, lng: userLng, isAutoDetected, requestLocation } = useGeolocation();
 
   const [claims, setClaims] = useState<Claim[]>([]);
   const [donationDetails, setDonationDetails] = useState<Record<number, Donation>>({});
@@ -151,9 +157,42 @@ export default function VolunteerDashboard() {
       {error && <div style={styles.error}>⚠️ {error}</div>}
       {success && <div style={styles.success}>✅ {success}</div>}
 
-      <button onClick={loadClaims} style={styles.refreshBtn} disabled={loading}>
-        {loading ? t("common.loading") : `🔄 ${t("common.refresh")}`}
-      </button>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+        <span style={{
+          fontSize: "0.8rem",
+          color: isAutoDetected ? "#059669" : "#475569",
+          fontWeight: 600,
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "4px",
+          background: isAutoDetected ? "#ecfdf5" : "#f1f5f9",
+          padding: "5px 12px",
+          borderRadius: "8px",
+          border: isAutoDetected ? "1px solid #a7f3d0" : "1px solid #e2e8f0",
+        }}>
+          📍 {isAutoDetected ? "GPS Auto-Detected" : "Current Location"}: {userLat.toFixed(4)}, {userLng.toFixed(4)}
+        </span>
+
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button
+            type="button"
+            onClick={requestLocation}
+            style={{
+              ...styles.refreshBtn,
+              background: "#d97706",
+              color: "#ffffff",
+              border: "none",
+              fontWeight: 700,
+              marginBottom: 0,
+            }}
+          >
+            🎯 Auto-Detect My Location
+          </button>
+          <button onClick={loadClaims} style={{ ...styles.refreshBtn, marginBottom: 0 }} disabled={loading}>
+            {loading ? t("common.loading") : `🔄 ${t("common.refresh")}`}
+          </button>
+        </div>
+      </div>
 
       {claims.length === 0 && !loading && (
         <div style={styles.empty}>
@@ -185,9 +224,36 @@ export default function VolunteerDashboard() {
                   <p>
                     📦 {donation.quantity} {donation.unit}
                   </p>
-                  <p>
-                    📍 {t("volunteer.location")} {donation.pickup_lat.toFixed(4)},{" "}
-                    {donation.pickup_lng.toFixed(4)}
+                  {donation.donor && (
+                    <p>
+                      👤 <strong>Donor:</strong> {donation.donor.name} •{" "}
+                      <a href={`tel:${donation.donor.phone}`} style={{ color: "#d97706", fontWeight: 700, textDecoration: "none" }}>
+                        📞 {donation.donor.phone}
+                      </a>
+                    </p>
+                  )}
+                  <p style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                    <span>
+                      📍 {t("volunteer.location")} {donation.pickup_lat.toFixed(4)},{" "}
+                      {donation.pickup_lng.toFixed(4)}
+                    </span>
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&origin=${userLat},${userLng}&destination=${donation.pickup_lat},${donation.pickup_lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        background: "#fef3c7",
+                        color: "#b45309",
+                        border: "1px solid #fde68a",
+                        padding: "2px 8px",
+                        borderRadius: "6px",
+                        fontWeight: 700,
+                        fontSize: "0.8rem",
+                        textDecoration: "none",
+                      }}
+                    >
+                      🧭 Live Navigation
+                    </a>
                   </p>
                   <p>
                     ⏰ {t("volunteer.expires")} {new Date(donation.expiry_time).toLocaleString()}

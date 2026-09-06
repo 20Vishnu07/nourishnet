@@ -1,4 +1,5 @@
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from "react-leaflet";
+import { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from "react-leaflet";
 import { type LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -17,6 +18,8 @@ L.Icon.Default.mergeOptions({
 interface LocationPickerProps {
   position: { lat: number; lng: number };
   onPositionChange: (lat: number, lng: number) => void;
+  onDetectLocation?: () => void;
+  isAutoDetected?: boolean;
 }
 
 function ClickHandler({
@@ -32,17 +35,27 @@ function ClickHandler({
   return null;
 }
 
+function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.setView([lat, lng], map.getZoom());
+  }, [lat, lng, map]);
+  return null;
+}
+
 export default function LocationPicker({
   position,
   onPositionChange,
+  onDetectLocation,
+  isAutoDetected,
 }: LocationPickerProps) {
   const center: LatLngExpression = [position.lat, position.lng];
 
   return (
-    <div style={{ height: "300px", borderRadius: "8px", overflow: "hidden" }}>
+    <div style={{ height: "320px", borderRadius: "10px", overflow: "hidden", position: "relative" }}>
       <MapContainer
         center={center}
-        zoom={13}
+        zoom={14}
         style={{ height: "100%", width: "100%" }}
       >
         <TileLayer
@@ -50,14 +63,57 @@ export default function LocationPicker({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <Marker position={[position.lat, position.lng]}>
-          <Popup>Pickup location</Popup>
+          <Popup>Pickup location: {position.lat.toFixed(4)}, {position.lng.toFixed(4)}</Popup>
         </Marker>
         <ClickHandler onPositionChange={onPositionChange} />
+        <RecenterMap lat={position.lat} lng={position.lng} />
       </MapContainer>
-      <p style={{ fontSize: "0.75rem", color: "#999", marginTop: "4px" }}>
-        📍 Click the map to set pickup location ({position.lat.toFixed(4)},{" "}
-        {position.lng.toFixed(4)})
-      </p>
+
+      {/* Auto Location Banner / Control */}
+      <div style={{
+        position: "absolute",
+        bottom: "8px",
+        left: "8px",
+        right: "8px",
+        zIndex: 1000,
+        backgroundColor: "rgba(255, 255, 255, 0.95)",
+        backdropFilter: "blur(4px)",
+        padding: "6px 12px",
+        borderRadius: "8px",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        fontSize: "0.8rem",
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#334155" }}>
+          <span>{isAutoDetected ? "📍 Auto-detected GPS:" : "📍 Pickup location:"}</span>
+          <strong style={{ color: "#059669" }}>
+            {position.lat.toFixed(4)}, {position.lng.toFixed(4)}
+          </strong>
+        </div>
+        {onDetectLocation && (
+          <button
+            type="button"
+            onClick={onDetectLocation}
+            style={{
+              background: "#059669",
+              color: "#ffffff",
+              border: "none",
+              borderRadius: "6px",
+              padding: "4px 10px",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+            }}
+          >
+            🎯 Auto-Detect
+          </button>
+        )}
+      </div>
     </div>
   );
 }

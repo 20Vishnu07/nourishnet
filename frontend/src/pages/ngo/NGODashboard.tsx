@@ -24,7 +24,7 @@ interface Claim {
 export default function NGODashboard() {
   const { t } = useTranslation();
   const { appUser, token } = useAuth();
-  const { lat, lng, error: geoError } = useGeolocation();
+  const { lat, lng, error: geoError, isAutoDetected, requestLocation } = useGeolocation();
 
   const [donations, setDonations] = useState<Donation[]>([]);
   const [myClaims, setMyClaims] = useState<Claim[]>([]);
@@ -165,22 +165,55 @@ export default function NGODashboard() {
       )}
 
       <div style={styles.controls}>
-        <label style={styles.label}>
-          {t("ngo.searchRadius")}{" "}
-          <select
-            value={radiusKm}
-            onChange={(e) => setRadiusKm(Number(e.target.value))}
-            style={styles.select}
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+          <label style={styles.label}>
+            {t("ngo.searchRadius")}{" "}
+            <select
+              value={radiusKm}
+              onChange={(e) => setRadiusKm(Number(e.target.value))}
+              style={styles.select}
+            >
+              <option value={5}>5 {t("common.km")}</option>
+              <option value={10}>10 {t("common.km")}</option>
+              <option value={25}>25 {t("common.km")}</option>
+              <option value={50}>50 {t("common.km")}</option>
+            </select>
+          </label>
+
+          <span style={{
+            fontSize: "0.8rem",
+            color: isAutoDetected ? "#059669" : "#475569",
+            fontWeight: 600,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "4px",
+            background: isAutoDetected ? "#ecfdf5" : "#f1f5f9",
+            padding: "4px 10px",
+            borderRadius: "8px",
+            border: isAutoDetected ? "1px solid #a7f3d0" : "1px solid #e2e8f0",
+          }}>
+            📍 {isAutoDetected ? "GPS Auto-Detected" : "Current Radar"}: {lat.toFixed(4)}, {lng.toFixed(4)}
+          </span>
+        </div>
+
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          <button
+            type="button"
+            onClick={requestLocation}
+            style={{
+              ...styles.refreshBtn,
+              background: "#0284c7",
+              color: "#ffffff",
+              border: "none",
+              fontWeight: 700,
+            }}
           >
-            <option value={5}>5 {t("common.km")}</option>
-            <option value={10}>10 {t("common.km")}</option>
-            <option value={25}>25 {t("common.km")}</option>
-            <option value={50}>50 {t("common.km")}</option>
-          </select>
-        </label>
-        <button onClick={loadNearby} style={styles.refreshBtn} disabled={loading}>
-          {loading ? t("common.loading") : `🔄 ${t("common.refresh")}`}
-        </button>
+            🎯 Auto-Detect Location
+          </button>
+          <button onClick={loadNearby} style={styles.refreshBtn} disabled={loading}>
+            {loading ? t("common.loading") : `🔄 ${t("common.refresh")}`}
+          </button>
+        </div>
       </div>
 
       <DonationMap

@@ -13,6 +13,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
+    allow_origin_regex=r"https://.*\.vercel\.app|https://.*\.onrender\.com|http://localhost:\d+",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -47,6 +48,17 @@ async def websocket_endpoint(websocket: WebSocket, token: str | None = Query(Non
         manager.disconnect(websocket)
     except Exception:
         manager.disconnect(websocket)
+
+
+@app.get("/")
+def root():
+    return {
+        "name": "NourishNet API",
+        "status": "online",
+        "docs": "/docs",
+        "health": "/health",
+        "version": "0.1.0"
+    }
 
 
 @app.get("/health")

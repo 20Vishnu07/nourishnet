@@ -54,7 +54,10 @@ export function useRealtimeUpdates({
       return;
     }
 
-    const wsBaseUrl = import.meta.env.VITE_WS_URL || "ws://localhost:8000/ws";
+    const defaultWsFromApi = import.meta.env.VITE_API_BASE_URL
+      ? `${import.meta.env.VITE_API_BASE_URL.replace(/^http/, "ws")}/ws`
+      : "ws://localhost:8000/ws";
+    const wsBaseUrl = import.meta.env.VITE_WS_URL || defaultWsFromApi;
     const wsUrl = `${wsBaseUrl}?token=${encodeURIComponent(token)}`;
 
     try {

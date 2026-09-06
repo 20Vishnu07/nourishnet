@@ -5,6 +5,7 @@ import {
   auth,
   RecaptchaVerifier,
   signInWithPhoneNumber,
+  firebaseConfig,
   type ConfirmationResult,
 } from "../config/firebase";
 import { useAuth, type UserRole } from "../contexts/AuthContext";
@@ -36,17 +37,22 @@ export default function LoginPage() {
 
   const setupRecaptcha = useCallback(() => {
     if (recaptchaVerifierRef.current) return;
-    if (!recaptchaRef.current) return;
+    const container = recaptchaRef.current || document.getElementById("recaptcha-container");
+    if (!container) return;
 
     try {
       recaptchaVerifierRef.current = new RecaptchaVerifier(
         auth,
-        recaptchaRef.current,
-        { size: "invisible" },
+        container as HTMLElement,
+        {
+          size: "invisible",
+          callback: () => {
+            // Invisible reCAPTCHA resolved
+          },
+        }
       );
     } catch (err) {
       console.error("RecaptchaVerifier setup failed:", err);
-      setLocalError("Failed to set up verification. Please refresh the page.");
     }
   }, []);
 
@@ -55,20 +61,20 @@ export default function LoginPage() {
     setLocalError(null);
     clearError();
 
-    if (!phone || phone.length < 10) {
-      setLocalError(t("auth.invalidPhone"));
+    if (!phone || phone.trim().length < 10) {
+      setLocalError(t("auth.invalidPhone") || "Please enter a valid 10-digit mobile number");
       return;
     }
 
-    const formattedPhone = phone.startsWith("+") ? phone : `+91${phone}`;
+    const cleanPhone = phone.trim().replace(/[\s-]/g, "");
+    const formattedPhone = cleanPhone.startsWith("+") ? cleanPhone : `+91${cleanPhone}`;
 
-    // If Firebase API key is a dummy or unset, gracefully simulate OTP
-    const isDummyFirebase =
-      !import.meta.env.VITE_FIREBASE_API_KEY ||
-      import.meta.env.VITE_FIREBASE_API_KEY.includes("dummy") ||
-      import.meta.env.VITE_FIREBASE_API_KEY.includes("ExampleApiKey");
+    const isFirebaseConfigured =
+      Boolean(firebaseConfig.apiKey) &&
+      !firebaseConfig.apiKey.includes("dummy") &&
+      !firebaseConfig.apiKey.includes("ExampleApiKey");
 
-    if (isDummyFirebase) {
+    if (!isFirebaseConfigured) {
       setIsSimulatedAuth(true);
       setStep("otp");
       setOtp("123456");
@@ -76,9 +82,25 @@ export default function LoginPage() {
     }
 
     try {
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear();
+        } catch { /* ignore */ }
+        recaptchaVerifierRef.current = null;
+      }
+
       setupRecaptcha();
       if (!recaptchaVerifierRef.current) {
-        setLocalError("Verification not ready. Please refresh.");
+        const container = recaptchaRef.current || document.getElementById("recaptcha-container");
+        if (container) {
+          recaptchaVerifierRef.current = new RecaptchaVerifier(auth, container as HTMLElement, {
+            size: "invisible",
+          });
+        }
+      }
+
+      if (!recaptchaVerifierRef.current) {
+        setLocalError("Verification container not ready. Please refresh.");
         return;
       }
 
@@ -89,27 +111,37 @@ export default function LoginPage() {
       );
       setConfirmationResult(result);
       setStep("otp");
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Failed to send OTP";
-      if (message.includes("invalid-api-key") || message.includes("api-key-not-valid") || message.includes("configuration-not-found")) {
-        setIsSimulatedAuth(true);
-        setStep("otp");
-        setOtp("123456");
-        return;
+    } catch (err: any) {
+      console.error("Firebase signInWithPhoneNumber error:", err);
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear();
+        } catch { /* ignore */ }
+        recaptchaVerifierRef.current = null;
       }
 
-      if (message.includes("operation-not-allowed")) {
-        setLocalError("Phone Auth is not enabled in Firebase Console. Please go to Authentication > Sign-in method > Phone and enable it.");
-      } else if (message.includes("unauthorized-domain")) {
-        setLocalError("Domain not authorized in Firebase Console. Go to Authentication > Settings > Authorized domains and add this domain.");
-      } else if (message.includes("too-many-requests")) {
-        setLocalError(t("auth.rateLimitError"));
-      } else if (message.includes("invalid-phone-number")) {
-        setLocalError(t("auth.invalidPhone"));
+      const code = err?.code || "";
+      const message = err instanceof Error ? err.message : "Failed to send OTP";
+
+      if (code === "auth/unauthorized-domain" || message.includes("unauthorized-domain")) {
+        setLocalError(
+          "Domain not authorized in Firebase. Please add 'nourishnet-kappa.vercel.app' in Firebase Console > Authentication > Settings > Authorized domains."
+        );
+      } else if (code === "auth/operation-not-allowed" || message.includes("operation-not-allowed")) {
+        setLocalError(
+          "Phone Auth is not enabled in Firebase Console. Go to Authentication > Sign-in method > Phone and enable it."
+        );
+      } else if (code === "auth/too-many-requests" || message.includes("too-many-requests") || message.includes("quota-exceeded")) {
+        setLocalError(
+          "Firebase SMS limit reached. On Firebase Spark plan, Google limits SMS. Please use Firebase Test Numbers (e.g. +91 9876543210 / OTP 123456) or upgrade to Blaze."
+        );
+      } else if (code === "auth/invalid-phone-number" || message.includes("invalid-phone-number")) {
+        setLocalError(t("auth.invalidPhone") || "Invalid phone number. Ensure it includes 10 digits or country code.");
+      } else if (code === "auth/captcha-check-failed" || message.includes("captcha")) {
+        setLocalError("reCAPTCHA check failed. Please refresh the page and try again.");
       } else {
         setLocalError(message);
       }
-      recaptchaVerifierRef.current = null;
     }
   };
 
@@ -118,6 +150,8 @@ export default function LoginPage() {
     setLocalError(null);
     clearError();
 
+    const cleanPhone = phone.trim().replace(/[\s-]/g, "");
+    const formattedPhone = cleanPhone.startsWith("+") ? cleanPhone : `+91${cleanPhone}`;
     const defaultName = name.trim() || `User (${role.toUpperCase()})`;
 
     if (isSimulatedAuth) {
@@ -126,7 +160,7 @@ export default function LoginPage() {
         return;
       }
       try {
-        await verifyAndLogin(`phone_${phone}`, defaultName, role, i18n.language);
+        await verifyAndLogin(`phone_${cleanPhone}`, defaultName, role, i18n.language, formattedPhone);
       } catch (err) {
         const message = err instanceof Error ? err.message : "";
         if (message.includes("must provide name and role")) {
@@ -154,7 +188,7 @@ export default function LoginPage() {
       const idToken = await userCredential.user.getIdToken();
 
       try {
-        await verifyAndLogin(idToken, defaultName, role, i18n.language);
+        await verifyAndLogin(idToken, defaultName, role, i18n.language, formattedPhone);
       } catch (err) {
         const message = err instanceof Error ? err.message : "";
         if (message.includes("must provide name and role")) {
@@ -166,9 +200,9 @@ export default function LoginPage() {
     } catch (err) {
       const message = err instanceof Error ? err.message : "OTP verification failed";
       if (message.includes("invalid-verification-code")) {
-        setLocalError(t("auth.invalidOtp"));
+        setLocalError(t("auth.invalidOtp") || "Invalid OTP entered. Please try again.");
       } else if (message.includes("code-expired")) {
-        setLocalError(t("auth.codeExpired"));
+        setLocalError(t("auth.codeExpired") || "OTP code has expired. Please request a new code.");
         setStep("phone");
       } else if (!message.includes("must provide name and role")) {
         setLocalError(message);
@@ -186,9 +220,12 @@ export default function LoginPage() {
       return;
     }
 
+    const cleanPhone = phone.trim().replace(/[\s-]/g, "");
+    const formattedPhone = cleanPhone.startsWith("+") ? cleanPhone : `+91${cleanPhone}`;
+
     if (isSimulatedAuth) {
       try {
-        await verifyAndLogin(`phone_${phone}`, name, role, i18n.language);
+        await verifyAndLogin(`phone_${cleanPhone}`, name, role, i18n.language, formattedPhone);
       } catch (err) {
         setLocalError(err instanceof Error ? err.message : "Registration failed");
       }
@@ -203,7 +240,7 @@ export default function LoginPage() {
         return;
       }
       const idToken = await user.getIdToken();
-      await verifyAndLogin(idToken, name, role, i18n.language);
+      await verifyAndLogin(idToken, name, role, i18n.language, formattedPhone);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Registration failed";
       setLocalError(message);

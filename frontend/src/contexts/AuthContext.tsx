@@ -39,6 +39,7 @@ interface AuthContextType extends AuthState {
     name?: string,
     role?: UserRole,
     languagePref?: string,
+    phone?: string,
   ) => Promise<void>;
   updateLanguagePref: (lang: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -105,6 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       name?: string,
       role?: UserRole,
       languagePref?: string,
+      phone?: string,
     ) => {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
@@ -113,6 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           method: "POST",
           body: {
             id_token: idToken,
+            phone: phone || undefined,
             name: name || undefined,
             role: role || undefined,
             language_pref: languagePref || "en",

@@ -56,7 +56,7 @@ export function useRealtimeUpdates({
 
     const defaultWsFromApi = import.meta.env.VITE_API_BASE_URL
       ? `${import.meta.env.VITE_API_BASE_URL.replace(/^http/, "ws")}/ws`
-      : "ws://localhost:8000/ws";
+      : "wss://nourishnet-yrql.onrender.com/ws";
     const wsBaseUrl = import.meta.env.VITE_WS_URL || defaultWsFromApi;
     const wsUrl = `${wsBaseUrl}?token=${encodeURIComponent(token)}`;
 

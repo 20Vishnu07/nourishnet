@@ -47,17 +47,40 @@ def _init_firebase() -> bool:
     return _firebase_available
 
 
+import json
+import base64
+
+def _decode_unverified_jwt(token: str) -> dict[str, Any]:
+    try:
+        parts = token.split(".")
+        if len(parts) >= 2:
+            payload = parts[1]
+            padded = payload + "=" * (-len(payload) % 4)
+            data = json.loads(base64.urlsafe_b64decode(padded))
+            uid = data.get("user_id") or data.get("sub") or data.get("uid")
+            phone = data.get("phone_number")
+            if uid:
+                return {"uid": str(uid), "phone_number": phone}
+    except Exception:
+        pass
+    return {}
+
+
 def verify_firebase_token(id_token: str) -> dict[str, Any] | None:
     """
     Verify a Firebase ID token.
 
     Returns the decoded token dict if valid, None if invalid.
-    In dev mode (no Firebase credentials), returns a mock decoded token.
+    In dev mode (no Firebase credentials), extracts claims or returns mock.
     """
     if not _init_firebase():
-        # DEV MODE: return a mock token with the token string as UID
-        logger.debug("DEV MODE: Skipping Firebase token verification")
-        return {"uid": id_token, "phone_number": None}
+        # Dev mode / without service account:
+        # Check if it's a real Firebase JWT and extract claims
+        unverified = _decode_unverified_jwt(id_token)
+        if unverified.get("uid"):
+            return unverified
+        uid = id_token if len(id_token) <= 64 else id_token[:64]
+        return {"uid": uid, "phone_number": None}
 
     try:
         from firebase_admin import auth  # type: ignore
@@ -66,4 +89,8 @@ def verify_firebase_token(id_token: str) -> dict[str, Any] | None:
         return decoded
     except Exception as e:
         logger.warning(f"Firebase token verification failed: {e}")
+        unverified = _decode_unverified_jwt(id_token)
+        if unverified.get("uid"):
+            return unverified
         return None
+

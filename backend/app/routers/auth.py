@@ -25,6 +25,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 class TokenVerifyRequest(BaseModel):
     """Request body for token verification."""
     id_token: str
+    phone: str | None = None
     # For first-login, client sends role selection
     name: str | None = None
     role: UserRole | None = None
@@ -55,16 +56,25 @@ def verify_token(request: TokenVerifyRequest, db: Session = Depends(get_db)):
             detail="Invalid or expired Firebase token",
         )
 
-    firebase_uid = decoded.get("uid", "")
-    phone = decoded.get("phone_number")
+    firebase_uid = str(decoded.get("uid") or "")[:128]
+    phone = decoded.get("phone_number") or request.phone
 
-    # Check for existing user by firebase_uid
-    existing_user = (
-        db.query(User).filter(User.firebase_uid == firebase_uid).first()
-    )
+    # Check for existing user by firebase_uid or by phone
+    existing_user = None
+    if firebase_uid:
+        existing_user = db.query(User).filter(User.firebase_uid == firebase_uid).first()
+    if not existing_user and phone:
+        existing_user = db.query(User).filter(User.phone == phone).first()
+        if existing_user and firebase_uid and not existing_user.firebase_uid:
+            existing_user.firebase_uid = firebase_uid
+            db.commit()
+            db.refresh(existing_user)
 
     if existing_user:
         # Existing user — issue JWT
+        if request.name and not existing_user.name:
+            existing_user.name = request.name
+            db.commit()
         access_token = create_access_token(
             data={"user_id": existing_user.id, "role": existing_user.role.value}
         )
@@ -81,12 +91,13 @@ def verify_token(request: TokenVerifyRequest, db: Session = Depends(get_db)):
             detail="New users must provide name and role",
         )
 
+    assigned_phone = phone or (f"dev-{firebase_uid}" if len(firebase_uid) <= 15 else f"dev-{firebase_uid[:15]}")
     new_user = User(
-        phone=phone or f"dev-{firebase_uid}",
+        phone=assigned_phone[:20],
         role=request.role,
         name=request.name,
         language_pref=request.language_pref,
-        firebase_uid=firebase_uid,
+        firebase_uid=firebase_uid or None,
     )
     db.add(new_user)
     db.commit()

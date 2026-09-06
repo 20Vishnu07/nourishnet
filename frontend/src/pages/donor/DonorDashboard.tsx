@@ -179,43 +179,44 @@ export default function DonorDashboard() {
       {prediction && (
         <div
           style={{
-            background: "linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%)",
-            border: "1px solid #c084fc",
-            borderRadius: "10px",
-            padding: "1rem",
-            marginBottom: "1.25rem",
+            background: "linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%)",
+            border: "1px solid #a7f3d0",
+            borderRadius: "14px",
+            padding: "1.25rem",
+            marginBottom: "1.5rem",
             display: "flex",
             flexDirection: "column",
-            gap: "0.25rem",
+            gap: "0.4rem",
+            boxShadow: "0 2px 4px rgba(5, 150, 105, 0.06)",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontWeight: 700, color: "#6b21a8", fontSize: "0.95rem" }}>
+            <span style={{ fontWeight: 800, color: "#065f46", fontSize: "0.95rem" }}>
               🤖 {t("donor.aiForecastTitle")}
             </span>
             <span
               style={{
                 fontSize: "0.75rem",
-                padding: "2px 8px",
-                borderRadius: "10px",
-                background: prediction.model_status === "trained_prediction" ? "#dcfce7" : "#fef9c3",
-                color: prediction.model_status === "trained_prediction" ? "#15803d" : "#854d0e",
-                fontWeight: 600,
+                padding: "3px 10px",
+                borderRadius: "12px",
+                background: prediction.model_status === "trained_prediction" ? "#dcfce7" : "#fef3c7",
+                color: prediction.model_status === "trained_prediction" ? "#166534" : "#92400e",
+                fontWeight: 700,
               }}
             >
               {prediction.model_status === "trained_prediction" ? t("donor.personalizedModel") : t("donor.regionalBaseline")}
             </span>
           </div>
-          <p style={{ margin: "4px 0 0", fontSize: "0.9rem", color: "#374151" }}>
+          <p style={{ margin: "4px 0 0", fontSize: "0.9rem", color: "#334155" }}>
             {t("donor.expectedSurplus")}{" "}
-            <strong style={{ color: "#4338ca", fontSize: "1.05rem" }}>
+            <strong style={{ color: "#059669", fontSize: "1.15rem" }}>
               ~{prediction.predicted_surplus_kg} kg
             </strong>{" "}
-            <span style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>
               ({t("donor.confidence")} {Math.round(prediction.confidence * 100)}%)
             </span>
           </p>
-          <p style={{ margin: 0, fontSize: "0.75rem", color: "#6b7280" }}>
+          <p style={{ margin: 0, fontSize: "0.75rem", color: "#64748b" }}>
             {prediction.message}
           </p>
         </div>
@@ -326,21 +327,22 @@ const styles = {
   field: { flex: 1, minWidth: "200px" },
   label: { display: "block", fontSize: "0.85rem", fontWeight: 600, marginBottom: "4px", color: "#333" },
   input: { width: "100%", padding: "0.6rem", borderRadius: "6px", border: "1px solid #ddd", fontSize: "0.9rem", boxSizing: "border-box" as const },
-  button: { padding: "0.75rem", borderRadius: "8px", border: "none", background: "#4caf50", color: "white", fontSize: "1rem", fontWeight: 600, cursor: "pointer" },
-  error: { background: "#fee", border: "1px solid #fcc", borderRadius: "8px", padding: "0.75rem", color: "#c33", fontSize: "0.85rem", marginBottom: "1rem" },
-  success: { background: "#efe", border: "1px solid #cfc", borderRadius: "8px", padding: "0.75rem", color: "#3a3", fontSize: "0.85rem", marginBottom: "1rem" },
-  hr: { border: "none", borderTop: "1px solid #eee", margin: "2rem 0" },
-  empty: { color: "#999", textAlign: "center" as const, padding: "2rem" },
+  button: { padding: "0.8rem", borderRadius: "10px", border: "none", background: "#059669", color: "white", fontSize: "1rem", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 4px rgba(5, 150, 105, 0.2)" },
+  error: { background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "0.75rem", color: "#b91c1c", fontSize: "0.85rem", marginBottom: "1rem" },
+  success: { background: "#ecfdf5", border: "1px solid #a7f3d0", borderRadius: "8px", padding: "0.75rem", color: "#065f46", fontSize: "0.85rem", marginBottom: "1rem" },
+  hr: { border: "none", borderTop: "1px solid #e2e8f0", margin: "2rem 0" },
+  empty: { color: "#94a3b8", textAlign: "center" as const, padding: "2rem" },
   list: { display: "flex", flexDirection: "column" as const, gap: "0.5rem" },
-  card: { background: "#f9f9f9", borderRadius: "8px", padding: "1rem" },
+  card: { background: "#ffffff", borderRadius: "10px", padding: "1rem 1.25rem", border: "1px solid #e2e8f0", boxShadow: "0 1px 3px rgba(0,0,0,0.05)" },
   cardHeader: { display: "flex", justifyContent: "space-between", alignItems: "center" },
-  cardInfo: { margin: "0.25rem 0 0", color: "#666", fontSize: "0.85rem" },
+  cardInfo: { margin: "0.25rem 0 0", color: "#64748b", fontSize: "0.85rem" },
   status: (s: string) => ({
     fontSize: "0.75rem",
-    fontWeight: 600,
-    padding: "2px 8px",
+    fontWeight: 700,
+    padding: "3px 10px",
     borderRadius: "12px",
     color: "white",
-    background: statusColors[s] || "#999",
+    background: statusColors[s] || "#64748b",
+    textTransform: "uppercase" as const,
   }),
 };

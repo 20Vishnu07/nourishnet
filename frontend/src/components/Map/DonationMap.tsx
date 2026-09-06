@@ -21,6 +21,12 @@ export interface DonationMarker {
   pickup_lat: number;
   pickup_lng: number;
   expiry_time: string;
+  donor?: {
+    id?: number;
+    name: string;
+    phone: string;
+    role?: string;
+  } | null;
 }
 
 interface DonationMapProps {
@@ -76,14 +82,27 @@ export default function DonationMap({
             }}
           >
             <Popup>
-              <div>
-                <strong>{d.food_type}</strong>
+              <div style={{ fontSize: "0.85rem", lineHeight: 1.5 }}>
+                <strong style={{ fontSize: "0.95rem", color: "#0f172a" }}>{d.food_type}</strong>
                 <br />
-                {d.quantity} {d.unit}
+                <span style={{ color: "#0284c7", fontWeight: 700 }}>
+                  {d.quantity} {d.unit}
+                </span>
                 <br />
-                Status: {d.status}
+                <strong>Status:</strong>{" "}
+                <span style={{ textTransform: "capitalize", fontWeight: 600 }}>{d.status}</span>
                 <br />
-                Expires: {new Date(d.expiry_time).toLocaleString()}
+                {d.donor && (
+                  <>
+                    <strong>Donor:</strong> {d.donor.name} ({d.donor.phone})
+                    <br />
+                  </>
+                )}
+                <strong>Location:</strong> {d.pickup_lat.toFixed(4)}, {d.pickup_lng.toFixed(4)}
+                <br />
+                <small style={{ color: "#64748b" }}>
+                  Expires: {new Date(d.expiry_time).toLocaleString()}
+                </small>
               </div>
             </Popup>
           </Marker>

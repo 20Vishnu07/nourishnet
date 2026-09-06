@@ -249,9 +249,10 @@ export default function DonorDashboard() {
               <select
                 value={unit}
                 onChange={(e) => setUnit(e.target.value)}
-                style={{ ...styles.input, width: "80px" }}
+                style={{ ...styles.input, width: "95px" }}
               >
                 <option value="kg">kg</option>
+                <option value="pieces">pieces</option>
                 <option value="liters">liters</option>
                 <option value="plates">plates</option>
                 <option value="packets">packets</option>
@@ -303,8 +304,41 @@ export default function DonorDashboard() {
                 <span style={styles.status(d.status)}>{d.status}</span>
               </div>
               <p style={styles.cardInfo}>
-                {d.quantity} {d.unit} · {new Date(d.expiry_time).toLocaleString()}
+                📦 <strong>{d.quantity} {d.unit}</strong> · ⏰ Expires: {new Date(d.expiry_time).toLocaleString()}
               </p>
+              <div style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "#475569", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.75rem" }}>
+                <span>📍 <strong>Pickup:</strong> {d.pickup_lat.toFixed(4)}, {d.pickup_lng.toFixed(4)}</span>
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${d.pickup_lat},${d.pickup_lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    color: "#059669",
+                    textDecoration: "none",
+                    fontWeight: 600,
+                    fontSize: "0.8rem",
+                    padding: "2px 8px",
+                    borderRadius: "6px",
+                    background: "#ecfdf5",
+                    border: "1px solid #a7f3d0",
+                  }}
+                >
+                  🗺️ Open in Google Maps
+                </a>
+              </div>
+              {d.status === "claimed" && (
+                <div style={{
+                  marginTop: "0.6rem",
+                  padding: "0.6rem 0.8rem",
+                  background: "#eff6ff",
+                  borderRadius: "8px",
+                  border: "1px solid #bfdbfe",
+                  fontSize: "0.85rem",
+                  color: "#1e40af",
+                }}>
+                  🤝 <strong>Food Claimed!</strong> An NGO has reserved this food and is dispatching pickup.
+                </div>
+              )}
             </div>
           ))}
         </div>

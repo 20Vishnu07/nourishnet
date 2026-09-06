@@ -11,12 +11,23 @@ interface Donation extends DonationMarker {
   created_at: string;
 }
 
+interface Claim {
+  id: number;
+  donation_id: number;
+  ngo_id: number;
+  volunteer_id: number | null;
+  status: string;
+  claimed_at: string;
+  donation?: Donation | null;
+}
+
 export default function NGODashboard() {
   const { t } = useTranslation();
   const { appUser, token } = useAuth();
   const { lat, lng, error: geoError } = useGeolocation();
 
   const [donations, setDonations] = useState<Donation[]>([]);
+  const [myClaims, setMyClaims] = useState<Claim[]>([]);
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
   const [radiusKm, setRadiusKm] = useState(10);
   const [loading, setLoading] = useState(false);
@@ -40,20 +51,40 @@ export default function NGODashboard() {
     }
   }, [lat, lng, radiusKm, token]);
 
+  const loadMyClaims = useCallback(async () => {
+    if (!appUser?.id) return;
+    try {
+      const claims = await apiFetch<Claim[]>(`/claims/?ngo_id=${appUser.id}`, { token });
+      setMyClaims(claims);
+    } catch {
+      // Silently fail if claims error
+    }
+  }, [appUser?.id, token]);
+
   const onNewDonation = useCallback((newDonation: Donation) => {
     setLiveNotification(`🔔 Real-time: New donation available! "${newDonation.food_type}" (${newDonation.quantity} ${newDonation.unit})`);
     loadNearby();
   }, [loadNearby]);
 
+  const onClaimStatusUpdated = useCallback(() => {
+    loadNearby();
+    loadMyClaims();
+  }, [loadNearby, loadMyClaims]);
+
   const { isConnected, isFallbackMode } = useRealtimeUpdates({
     onNewDonation,
-    onPollFallback: loadNearby,
+    onClaimStatusUpdated,
+    onPollFallback: () => {
+      loadNearby();
+      loadMyClaims();
+    },
     pollIntervalMs: 10000,
   });
 
   useEffect(() => {
     loadNearby();
-  }, [loadNearby]);
+    loadMyClaims();
+  }, [loadNearby, loadMyClaims]);
 
   const handleClaim = async (donation: Donation) => {
     setError(null);
@@ -69,8 +100,9 @@ export default function NGODashboard() {
       });
       setClaimSuccess(t("ngo.claimSuccess", { foodType: donation.food_type }));
       setSelectedDonation(null);
-      // Refresh list
+      // Refresh list and claims
       await loadNearby();
+      await loadMyClaims();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to claim donation");
     }
@@ -163,29 +195,106 @@ export default function NGODashboard() {
 
       {selectedDonation && (
         <div style={styles.detail}>
-          <h3>{selectedDonation.food_type}</h3>
-          <p>
-            {selectedDonation.quantity} {selectedDonation.unit}
-          </p>
-          <p>{t("ngo.expires")} {new Date(selectedDonation.expiry_time).toLocaleString()}</p>
-          <p>{t("ngo.status")} {selectedDonation.status}</p>
-          {selectedDonation.status === "available" && (
-            <button onClick={() => handleClaim(selectedDonation)} style={styles.claimBtn}>
-              📋 {t("ngo.claimThisDonation")}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+            <div>
+              <h3 style={{ margin: "0 0 0.25rem", color: "#0f172a", fontSize: "1.3rem" }}>
+                🍲 {selectedDonation.food_type}
+              </h3>
+              <p style={{ margin: "0 0 0.5rem", color: "#0284c7", fontWeight: 700, fontSize: "1.05rem" }}>
+                📦 {selectedDonation.quantity} {selectedDonation.unit}
+              </p>
+            </div>
+            <span style={{
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              padding: "4px 10px",
+              borderRadius: "12px",
+              color: "white",
+              background: selectedDonation.status === "available" ? "#10b981" : "#0284c7",
+              textTransform: "uppercase",
+            }}>
+              {selectedDonation.status}
+            </span>
+          </div>
+
+          <div style={{
+            background: "#ffffff",
+            padding: "1rem",
+            borderRadius: "10px",
+            border: "1px solid #bfdbfe",
+            marginTop: "0.75rem",
+            marginBottom: "1rem",
+            fontSize: "0.9rem",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.4rem",
+          }}>
+            <div>
+              ⏰ <strong>{t("ngo.expires")}:</strong> {new Date(selectedDonation.expiry_time).toLocaleString()}
+            </div>
+            <div>
+              📍 <strong>{t("ngo.pickupCoordinates")}:</strong> {selectedDonation.pickup_lat.toFixed(4)}, {selectedDonation.pickup_lng.toFixed(4)}
+              <a
+                href={`https://www.google.com/maps/search/?api=1&query=${selectedDonation.pickup_lat},${selectedDonation.pickup_lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  marginLeft: "0.5rem",
+                  color: "#0284c7",
+                  textDecoration: "none",
+                  fontWeight: 600,
+                  fontSize: "0.8rem",
+                  padding: "2px 8px",
+                  borderRadius: "6px",
+                  background: "#e0f2fe",
+                  border: "1px solid #bae6fd",
+                }}
+              >
+                🗺️ {t("ngo.viewOnMap")}
+              </a>
+            </div>
+            {selectedDonation.donor && (
+              <div style={{
+                marginTop: "0.4rem",
+                paddingTop: "0.4rem",
+                borderTop: "1px dashed #cbd5e1",
+              }}>
+                <div style={{ fontWeight: 700, color: "#0f172a", marginBottom: "2px" }}>
+                  👤 {t("ngo.donorDetails")}:
+                </div>
+                <div style={{ color: "#334155" }}>
+                  <strong>{t("ngo.donorName")}:</strong> {selectedDonation.donor.name}
+                </div>
+                <div style={{ color: "#334155" }}>
+                  <strong>{t("ngo.donorPhone")}:</strong>{" "}
+                  <a href={`tel:${selectedDonation.donor.phone}`} style={{ color: "#0284c7", fontWeight: 600, textDecoration: "none" }}>
+                    📞 {selectedDonation.donor.phone}
+                  </a>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+            {selectedDonation.status === "available" && (
+              <button onClick={() => handleClaim(selectedDonation)} style={styles.claimBtn}>
+                📋 {t("ngo.claimThisDonation")}
+              </button>
+            )}
+            <button
+              onClick={() => setSelectedDonation(null)}
+              style={styles.closeBtn}
+            >
+              {t("common.close")}
             </button>
-          )}
-          <button
-            onClick={() => setSelectedDonation(null)}
-            style={styles.closeBtn}
-          >
-            {t("common.close")}
-          </button>
+          </div>
         </div>
       )}
 
+      {/* AVAILABLE DONATIONS LIST */}
       {donations.length > 0 && (
         <>
-          <h3 style={{ marginTop: "1.5rem" }}>{t("ngo.availableDonations")}</h3>
+          <h3 style={{ marginTop: "1.75rem" }}>{t("ngo.availableDonations")}</h3>
           <div style={styles.list}>
             {donations.map((d) => (
               <div
@@ -193,17 +302,123 @@ export default function NGODashboard() {
                 style={styles.card}
                 onClick={() => setSelectedDonation(d)}
               >
-                <strong>{d.food_type}</strong>
+                <div>
+                  <strong>🍲 {d.food_type}</strong>
+                  {d.donor && (
+                    <span style={{ fontSize: "0.8rem", color: "#64748b", marginLeft: "8px" }}>
+                      by {d.donor.name}
+                    </span>
+                  )}
+                </div>
                 <span style={styles.qty}>
                   {d.quantity} {d.unit}
                 </span>
                 <span style={styles.expiry}>
-                  {new Date(d.expiry_time).toLocaleString()}
+                  ⏰ {new Date(d.expiry_time).toLocaleString()}
                 </span>
               </div>
             ))}
           </div>
         </>
+      )}
+
+      {/* CLAIMED FOOD LIST SECTION */}
+      <h3 style={{ marginTop: "2rem", display: "flex", alignItems: "center", gap: "8px" }}>
+        📋 {t("ngo.myClaimedFood")}
+        <span style={{
+          fontSize: "0.75rem",
+          background: "#0284c7",
+          color: "white",
+          padding: "2px 8px",
+          borderRadius: "12px",
+          fontWeight: 700,
+        }}>
+          {myClaims.length}
+        </span>
+      </h3>
+
+      {myClaims.length === 0 ? (
+        <p style={{ color: "#94a3b8", textAlign: "center", padding: "1.5rem", background: "#f8fafc", borderRadius: "10px", border: "1px dashed #cbd5e1" }}>
+          {t("ngo.noClaimedYet")}
+        </p>
+      ) : (
+        <div style={styles.list}>
+          {myClaims.map((claim) => {
+            const donation = claim.donation;
+            return (
+              <div
+                key={claim.id}
+                style={{
+                  ...styles.card,
+                  borderLeft: "4px solid #0284c7",
+                  flexDirection: "column",
+                  alignItems: "stretch",
+                  gap: "0.6rem",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <strong style={{ fontSize: "1.05rem", color: "#0f172a" }}>
+                      🍲 {donation ? donation.food_type : `Claim #${claim.id}`}
+                    </strong>
+                    {donation && (
+                      <span style={{ marginLeft: "8px", fontWeight: 700, color: "#0284c7", fontSize: "0.95rem" }}>
+                        ({donation.quantity} {donation.unit})
+                      </span>
+                    )}
+                  </div>
+                  <span style={{
+                    fontSize: "0.75rem",
+                    fontWeight: 700,
+                    padding: "3px 10px",
+                    borderRadius: "12px",
+                    color: "white",
+                    background: claim.status === "delivered" ? "#10b981" : claim.status === "picked_up" ? "#8b5cf6" : "#0284c7",
+                    textTransform: "uppercase",
+                  }}>
+                    {claim.status.replace("_", " ")}
+                  </span>
+                </div>
+
+                {donation && (
+                  <div style={{ fontSize: "0.85rem", color: "#475569", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                    {donation.donor && (
+                      <div>
+                        👤 <strong>{t("ngo.donorDetails")}:</strong> {donation.donor.name} •{" "}
+                        <a href={`tel:${donation.donor.phone}`} style={{ color: "#0284c7", textDecoration: "none", fontWeight: 600 }}>
+                          📞 {donation.donor.phone}
+                        </a>
+                      </div>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <span>📍 <strong>{t("ngo.pickupCoordinates")}:</strong> {donation.pickup_lat.toFixed(4)}, {donation.pickup_lng.toFixed(4)}</span>
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${donation.pickup_lat},${donation.pickup_lng}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          color: "#0284c7",
+                          textDecoration: "none",
+                          fontWeight: 600,
+                          fontSize: "0.8rem",
+                          padding: "2px 8px",
+                          borderRadius: "6px",
+                          background: "#e0f2fe",
+                          border: "1px solid #bae6fd",
+                        }}
+                      >
+                        🗺️ {t("ngo.viewOnMap")}
+                      </a>
+                    </div>
+                    <div>
+                      ⏰ <strong>{t("ngo.expires")}:</strong> {new Date(donation.expiry_time).toLocaleString()}
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

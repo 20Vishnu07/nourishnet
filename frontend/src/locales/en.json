@@ -70,7 +70,15 @@
     "availableDonations": "Available Donations",
     "noDonationsInArea": "No donations available in this area",
     "status": "Status:",
-    "expires": "Expires:"
+    "expires": "Expires:",
+    "myClaimedFood": "Claimed Food List",
+    "noClaimedYet": "You haven't claimed any donations yet.",
+    "donorDetails": "Donor Details",
+    "donorName": "Donor Name:",
+    "donorPhone": "Donor Phone:",
+    "pickupCoordinates": "Pickup Location:",
+    "viewOnMap": "View On Map",
+    "directions": "Get Directions"
   },
   "volunteer": {
     "title": "My Assigned Claims",

@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.models.donation import DonationStatus
+from app.schemas import UserResponse
 
 
 class DonationCreate(BaseModel):
@@ -35,5 +36,6 @@ class DonationResponse(BaseModel):
     pickup_lng: float
     status: DonationStatus
     created_at: datetime
+    donor: UserResponse | None = None
 
     model_config = {"from_attributes": True}

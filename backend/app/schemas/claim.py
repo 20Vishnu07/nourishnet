@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from app.models.claim import ClaimStatus
+from app.schemas.donation import DonationResponse
 
 
 class ClaimCreate(BaseModel):
@@ -23,5 +24,6 @@ class ClaimResponse(BaseModel):
     volunteer_id: int | None
     status: ClaimStatus
     claimed_at: datetime
+    donation: DonationResponse | None = None
 
     model_config = {"from_attributes": True}

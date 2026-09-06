@@ -70,7 +70,15 @@
     "availableDonations": "उपलब्ध दान",
     "noDonationsInArea": "इस क्षेत्र में कोई दान उपलब्ध नहीं है",
     "status": "स्थिति:",
-    "expires": "समाप्ति:"
+    "expires": "समाप्ति:",
+    "myClaimedFood": "दावा की गई भोजन सूची",
+    "noClaimedYet": "आपने अभी तक किसी दान का दावा नहीं किया है।",
+    "donorDetails": "दाता का विवरण",
+    "donorName": "दाता का नाम:",
+    "donorPhone": "दाता का फ़ोन:",
+    "pickupCoordinates": "पिकअप स्थान:",
+    "viewOnMap": "मानचित्र पर देखें",
+    "directions": "दिशा-निर्देश प्राप्त करें"
   },
   "volunteer": {
     "title": "मेरे सौंपे गए कार्य",

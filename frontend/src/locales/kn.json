@@ -70,7 +70,15 @@
     "availableDonations": "ಲಭ್ಯವಿರುವ ದಾನಗಳು",
     "noDonationsInArea": "ಈ ಪ್ರದೇಶದಲ್ಲಿ ಯಾವುದೇ ದಾನಗಳು ಲಭ್ಯವಿಲ್ಲ",
     "status": "ಸ್ಥಿತಿ:",
-    "expires": "ಮುಕ್ತಾಯ:"
+    "expires": "ಮುಕ್ತಾಯ:",
+    "myClaimedFood": "ಪಡೆದುಕೊಳ್ಳಲಾದ ಆಹಾರ ಪಟ್ಟಿ",
+    "noClaimedYet": "ನೀವು ಇನ್ನೂ ಯಾವುದೇ ದಾನವನ್ನು ಪಡೆದುಕೊಂಡಿಲ್ಲ.",
+    "donorDetails": "ದಾನಿಗಳ ವಿವರಗಳು",
+    "donorName": "ದಾನಿಯ ಹೆಸರು:",
+    "donorPhone": "ದಾನಿಯ ಫೋನ್:",
+    "pickupCoordinates": "ಪಿಕಪ್ ಸ್ಥಳ:",
+    "viewOnMap": "ನಕ್ಷೆಯಲ್ಲಿ ನೋಡಿ",
+    "directions": "ದಿಕ್ಕುಗಳನ್ನು ಪಡೆಯಿರಿ"
   },
   "volunteer": {
     "title": "ನನಗೆ ನಿಯೋಜಿಸಲಾದ ಕಾರ್ಯಗಳು",

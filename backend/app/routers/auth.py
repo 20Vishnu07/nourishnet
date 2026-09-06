@@ -52,19 +52,40 @@ def register_user(request: UserRegisterRequest, db: Session = Depends(get_db)):
             detail="Email is already registered. Please sign in instead.",
         )
 
+    # Provide safe fallback phone in case old DB schema has NOT NULL/UNIQUE on phone
+    phone_val = (
+        request.phone.strip()
+        if request.phone and request.phone.strip()
+        else f"usr-{clean_email.split('@')[0][:12]}"
+    )
+
     new_user = User(
         email=clean_email,
         hashed_password=hash_password(request.password),
         name=request.name.strip(),
         role=request.role,
-        phone=request.phone.strip() if request.phone else None,
+        phone=phone_val[:20],
         org_name=request.org_name.strip() if request.org_name else None,
         address=request.address.strip() if request.address else None,
         language_pref=request.language_pref,
     )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
+
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+    except Exception as e:
+        db.rollback()
+        err_msg = str(e)
+        if "UNIQUE" in err_msg.upper() or "duplicate" in err_msg.lower():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Email or phone is already registered. Please sign in.",
+            )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration error: {err_msg}",
+        )
 
     access_token = create_access_token(
         data={"user_id": new_user.id, "role": new_user.role.value}
@@ -74,6 +95,7 @@ def register_user(request: UserRegisterRequest, db: Session = Depends(get_db)):
         user=UserResponse.model_validate(new_user),
         is_new_user=True,
     )
+
 
 
 @router.post("/login", response_model=TokenResponse)

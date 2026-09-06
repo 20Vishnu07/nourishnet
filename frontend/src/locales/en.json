@@ -38,6 +38,8 @@
     "signingUp": "Creating account...",
     "haveAccount": "Already have an account? Sign In",
     "noAccount": "Don't have an account? Create one now",
+    "noAccountFoundJump": "No account found with this email. We've switched you to Create Account — please register!",
+    "alreadyRegisteredJump": "An account already exists with this email. Please Sign In!",
     "orgLabel": "Organization / Establishment Name",
     "orgPlaceholder": "e.g. Care Foundation or Green Leaf Cafe",
     "addressLabel": "Address / Location",

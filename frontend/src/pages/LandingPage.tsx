@@ -31,6 +31,13 @@ export default function LandingPage() {
 
   const displayError = localError || error;
 
+  const openSignIn = () => {
+    setAuthMode("signin");
+    setLocalError(null);
+    clearError();
+    setIsAuthOpen(true);
+  };
+
   const openAuthWithRole = (role: UserRole) => {
     setSelectedRole(role);
     setAuthMode("signup");
@@ -54,7 +61,18 @@ export default function LandingPage() {
       setIsAuthOpen(false);
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : "Sign in failed");
+      const msg = err instanceof Error ? err.message : "Sign in failed";
+      // If user does not exist (404), jump directly to Sign Up tab with their email pre-filled!
+      if (
+        msg.toLowerCase().includes("no account") ||
+        msg.toLowerCase().includes("not found") ||
+        msg.includes("404")
+      ) {
+        setAuthMode("signup");
+        setLocalError(t("auth.noAccountFoundJump"));
+      } else {
+        setLocalError(msg);
+      }
     }
   };
 
@@ -90,7 +108,17 @@ export default function LandingPage() {
       setIsAuthOpen(false);
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : "Registration failed");
+      const msg = err instanceof Error ? err.message : "Registration failed";
+      if (
+        msg.toLowerCase().includes("already registered") ||
+        msg.toLowerCase().includes("already exists") ||
+        msg.includes("400")
+      ) {
+        setAuthMode("signin");
+        setLocalError(t("auth.alreadyRegisteredJump"));
+      } else {
+        setLocalError(msg);
+      }
     }
   };
 
@@ -142,7 +170,7 @@ export default function LandingPage() {
           <div style={landingStyles.navRight}>
             <LanguageSwitcher />
             <button
-              onClick={() => openAuthWithRole("donor")}
+              onClick={openSignIn}
               style={landingStyles.navSignInBtn}
             >
               {t("landing.signInBtn")}

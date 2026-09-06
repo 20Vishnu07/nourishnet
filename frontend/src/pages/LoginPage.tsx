@@ -38,7 +38,17 @@ export default function LoginPage() {
       await login(email, password);
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : "Sign in failed");
+      const msg = err instanceof Error ? err.message : "Sign in failed";
+      if (
+        msg.toLowerCase().includes("no account") ||
+        msg.toLowerCase().includes("not found") ||
+        msg.includes("404")
+      ) {
+        setMode("signup");
+        setLocalError(t("auth.noAccountFoundJump"));
+      } else {
+        setLocalError(msg);
+      }
     }
   };
 
@@ -73,7 +83,17 @@ export default function LoginPage() {
       });
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      setLocalError(err instanceof Error ? err.message : "Registration failed");
+      const msg = err instanceof Error ? err.message : "Registration failed";
+      if (
+        msg.toLowerCase().includes("already registered") ||
+        msg.toLowerCase().includes("already exists") ||
+        msg.includes("400")
+      ) {
+        setMode("signin");
+        setLocalError(t("auth.alreadyRegisteredJump"));
+      } else {
+        setLocalError(msg);
+      }
     }
   };
 

@@ -109,7 +109,11 @@ export default function LandingPage() {
         return;
       }
 
-      if (message.includes("too-many-requests")) {
+      if (message.includes("operation-not-allowed")) {
+        setLocalError("Phone Auth is not enabled in Firebase Console. Please go to Authentication > Sign-in method > Phone and enable it.");
+      } else if (message.includes("unauthorized-domain")) {
+        setLocalError("Domain not authorized in Firebase Console. Go to Authentication > Settings > Authorized domains and add this domain.");
+      } else if (message.includes("too-many-requests")) {
         setLocalError(t("auth.rateLimitError"));
       } else if (message.includes("invalid-phone-number")) {
         setLocalError(t("auth.invalidPhone"));

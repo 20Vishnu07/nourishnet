@@ -32,6 +32,7 @@ export interface DonationMarker {
   pickup_lat: number;
   pickup_lng: number;
   expiry_time: string;
+  image_url?: string | null;
   donor?: {
     id?: number;
     name: string;
@@ -98,6 +99,21 @@ export default function DonationMap({
             <Popup>
               <div style={{ fontSize: "0.85rem", lineHeight: 1.5 }}>
                 <strong style={{ fontSize: "0.95rem", color: "#0f172a" }}>{d.food_type}</strong>
+                {d.image_url && (
+                  <div style={{ margin: "6px 0" }}>
+                    <img
+                      src={d.image_url}
+                      alt="Packaging"
+                      style={{
+                        width: "100%",
+                        maxHeight: "90px",
+                        objectFit: "cover",
+                        borderRadius: "6px",
+                        display: "block",
+                      }}
+                    />
+                  </div>
+                )}
                 <br />
                 <span style={{ color: "#0284c7", fontWeight: 700 }}>
                   {d.quantity} {d.unit}

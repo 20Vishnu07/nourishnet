@@ -336,6 +336,41 @@ export default function NGODashboard() {
             </span>
           </div>
 
+          {selectedDonation.image_url && (
+            <div style={{
+              marginTop: "0.75rem",
+              borderRadius: "10px",
+              overflow: "hidden",
+              border: "1px solid #bfdbfe",
+              background: "#0f172a",
+              display: "flex",
+              flexDirection: "column",
+            }}>
+              <div style={{
+                background: "linear-gradient(to right, #0284c7, #0ea5e9)",
+                color: "#ffffff",
+                padding: "4px 12px",
+                fontSize: "0.78rem",
+                fontWeight: 700,
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+              }}>
+                📸 Food & Packaging Condition (Uploaded by Donor)
+              </div>
+              <img
+                src={selectedDonation.image_url}
+                alt="Food packaging condition"
+                style={{
+                  width: "100%",
+                  maxHeight: "240px",
+                  objectFit: "contain",
+                  background: "#0f172a",
+                }}
+              />
+            </div>
+          )}
+
           <div style={{
             background: "#ffffff",
             padding: "1rem",
@@ -435,13 +470,34 @@ export default function NGODashboard() {
                 style={styles.card}
                 onClick={() => setSelectedDonation(d)}
               >
-                <div>
-                  <strong>🍲 {d.food_type}</strong>
-                  {d.donor && (
-                    <span style={{ fontSize: "0.8rem", color: "#64748b", marginLeft: "8px" }}>
-                      by {d.donor.name}
-                    </span>
+                <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  {d.image_url && (
+                    <img
+                      src={d.image_url}
+                      alt="Food packaging"
+                      style={{
+                        width: "48px",
+                        height: "48px",
+                        borderRadius: "8px",
+                        objectFit: "cover",
+                        border: "1px solid #cbd5e1",
+                        flexShrink: 0,
+                      }}
+                    />
                   )}
+                  <div>
+                    <strong>🍲 {d.food_type}</strong>
+                    {d.donor && (
+                      <span style={{ fontSize: "0.8rem", color: "#64748b", marginLeft: "8px" }}>
+                        by {d.donor.name}
+                      </span>
+                    )}
+                    {d.image_url && (
+                      <div style={{ fontSize: "0.72rem", color: "#059669", fontWeight: 600 }}>
+                        📸 Photo attached
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <span style={styles.qty}>
                   {d.quantity} {d.unit}
@@ -561,6 +617,24 @@ export default function NGODashboard() {
                         🗺️ Google Maps
                       </a>
                     </div>
+                    {donation.image_url && (
+                      <div style={{ marginTop: "0.4rem", display: "flex", alignItems: "center", gap: "10px" }}>
+                        <img
+                          src={donation.image_url}
+                          alt="Packaging condition"
+                          style={{
+                            width: "80px",
+                            height: "60px",
+                            objectFit: "cover",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                          }}
+                        />
+                        <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
+                          📸 Food packaging condition
+                        </span>
+                      </div>
+                    )}
                   </div>
                 )}
 

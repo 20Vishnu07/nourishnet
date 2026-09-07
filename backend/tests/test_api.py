@@ -258,6 +258,29 @@ def test_create_donation():
     assert data["food_type"] == "Rice"
     assert data["quantity"] == 10.0
     assert data["status"] == "available"
+    assert data.get("image_url") is None
+
+
+def test_create_donation_with_photo():
+    user, token = _create_user_and_get_token()
+    expiry = (datetime.utcnow() + timedelta(hours=6)).isoformat()
+    mock_photo = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD..."
+    response = client.post(
+        f"/donations/?donor_id={user['id']}",
+        json={
+            "food_type": "Meals Tray Box",
+            "quantity": 15.0,
+            "unit": "packets",
+            "expiry_time": expiry,
+            "pickup_lat": 13.0827,
+            "pickup_lng": 80.2707,
+            "image_url": mock_photo,
+        },
+    )
+    assert response.status_code == 201
+    data = response.json()
+    assert data["food_type"] == "Meals Tray Box"
+    assert data["image_url"] == mock_photo
 
 
 def test_list_donations():

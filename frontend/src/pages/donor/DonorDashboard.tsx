@@ -16,6 +16,7 @@ interface Donation {
   status: string;
   pickup_lat: number;
   pickup_lng: number;
+  image_url?: string | null;
   created_at: string;
 }
 
@@ -31,6 +32,55 @@ export default function DonorDashboard() {
   const [pickupLat, setPickupLat] = useState(lat);
   const [pickupLng, setPickupLng] = useState(lng);
   const [detectingLocation, setDetectingLocation] = useState(false);
+  const [foodPhoto, setFoodPhoto] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+
+  // Client-side auto-downsampling for fast, lightweight base64 photo storage
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file (JPEG, PNG, WebP).");
+      return;
+    }
+
+    setPhotoUploading(true);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_SIZE = 800;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.78);
+          setFoodPhoto(compressedDataUrl);
+        }
+        setPhotoUploading(false);
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Automatically update pickup coordinates when GPS/IP auto-detection succeeds on mount
   useEffect(() => {
@@ -136,6 +186,7 @@ export default function DonorDashboard() {
             expiry_time: expiry,
             pickup_lat: pickupLat,
             pickup_lng: pickupLng,
+            image_url: foodPhoto || undefined,
           },
         },
       );
@@ -144,6 +195,7 @@ export default function DonorDashboard() {
       setSuccess(t("donor.createdSuccess", { foodType }));
       setFoodType("");
       setQuantity("");
+      setFoodPhoto(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create donation");
     } finally {
@@ -303,6 +355,95 @@ export default function DonorDashboard() {
         </div>
 
         <div style={styles.field}>
+          <label style={{ ...styles.label, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span>📸 Food & Packaging Photo <span style={{ fontWeight: 400, color: "#64748b", fontSize: "0.8rem" }}>(Optional)</span></span>
+            <span style={{ fontSize: "0.75rem", color: "#059669", fontWeight: 600 }}>Helps NGO & Volunteer inspect packaging</span>
+          </label>
+          {foodPhoto ? (
+            <div style={{ position: "relative", display: "inline-block", marginTop: "0.35rem" }}>
+              <img
+                src={foodPhoto}
+                alt="Food packaging preview"
+                style={{
+                  width: "140px",
+                  height: "105px",
+                  objectFit: "cover",
+                  borderRadius: "10px",
+                  border: "2px solid #10b981",
+                  boxShadow: "0 2px 6px rgba(0,0,0,0.12)",
+                  display: "block",
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => setFoodPhoto(null)}
+                style={{
+                  position: "absolute",
+                  top: "-8px",
+                  right: "-8px",
+                  background: "#ef4444",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: "50%",
+                  width: "24px",
+                  height: "24px",
+                  cursor: "pointer",
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                }}
+                title="Remove photo"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <label
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "0.4rem",
+                padding: "1rem",
+                border: "2px dashed #cbd5e1",
+                borderRadius: "10px",
+                background: "#f8fafc",
+                cursor: "pointer",
+                transition: "border-color 0.2s, background 0.2s",
+                marginTop: "0.35rem",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "#10b981";
+                e.currentTarget.style.background = "#f0fdf4";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#cbd5e1";
+                e.currentTarget.style.background = "#f8fafc";
+              }}
+            >
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePhotoSelect}
+                style={{ display: "none" }}
+              />
+              <span style={{ fontSize: "1.5rem" }}>📷</span>
+              <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#334155" }}>
+                {photoUploading ? "Compressing photo..." : "Upload or take photo of packed food"}
+              </span>
+              <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
+                Max size auto-compressed · JPG, PNG, WebP
+              </span>
+            </label>
+          )}
+        </div>
+
+        <div style={styles.field}>
           <label style={styles.label}>{t("donor.pickupLocation")}</label>
           <LocationPicker
             position={{ lat: pickupLat, lng: pickupLng }}
@@ -337,6 +478,24 @@ export default function DonorDashboard() {
               <p style={styles.cardInfo}>
                 📦 <strong>{d.quantity} {d.unit}</strong> · ⏰ Expires: {new Date(d.expiry_time).toLocaleString()}
               </p>
+              {d.image_url && (
+                <div style={{ marginTop: "0.5rem", display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <img
+                    src={d.image_url}
+                    alt="Packaging condition"
+                    style={{
+                      width: "72px",
+                      height: "54px",
+                      objectFit: "cover",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                    }}
+                  />
+                  <span style={{ fontSize: "0.75rem", color: "#64748b" }}>
+                    📸 Packaging photo attached
+                  </span>
+                </div>
+              )}
               <div style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "#475569", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.75rem" }}>
                 <span>📍 <strong>Pickup:</strong> {d.pickup_lat != null ? Number(d.pickup_lat).toFixed(4) : "13.0827"}, {d.pickup_lng != null ? Number(d.pickup_lng).toFixed(4) : "80.2707"}</span>
                 <a

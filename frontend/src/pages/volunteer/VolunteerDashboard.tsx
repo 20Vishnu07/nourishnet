@@ -14,6 +14,7 @@ interface Donation {
   pickup_lat: number;
   pickup_lng: number;
   expiry_time: string;
+  image_url?: string | null;
   donor?: {
     name: string;
     phone: string;
@@ -539,6 +540,30 @@ export default function VolunteerDashboard() {
                             🗺️ Preview Route
                           </a>
                         </p>
+                        {donation.image_url && (
+                          <div style={{ marginTop: "0.5rem", padding: "0.5rem", background: "#fff", borderRadius: "8px", border: "1px solid #fde68a", display: "flex", alignItems: "center", gap: "10px" }}>
+                            <img
+                              src={donation.image_url}
+                              alt="Packaging condition"
+                              style={{
+                                width: "70px",
+                                height: "52px",
+                                objectFit: "cover",
+                                borderRadius: "6px",
+                                border: "1px solid #cbd5e1",
+                                flexShrink: 0,
+                              }}
+                            />
+                            <div>
+                              <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#92400e" }}>
+                                📸 Packaging Condition
+                              </div>
+                              <div style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                                Check package size & form before driving
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -637,6 +662,30 @@ export default function VolunteerDashboard() {
                       <p>
                         ⏰ {t("volunteer.expires")}: {new Date(donation.expiry_time).toLocaleString()}
                       </p>
+                      {donation.image_url && (
+                        <div style={{ marginTop: "0.5rem", padding: "0.5rem", background: "#f8fafc", borderRadius: "8px", border: "1px solid #cbd5e1", display: "flex", alignItems: "center", gap: "10px" }}>
+                          <img
+                            src={donation.image_url}
+                            alt="Packaging condition"
+                            style={{
+                              width: "70px",
+                              height: "52px",
+                              objectFit: "cover",
+                              borderRadius: "6px",
+                              border: "1px solid #cbd5e1",
+                              flexShrink: 0,
+                            }}
+                          />
+                          <div>
+                            <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>
+                              📸 Visual Package Reference
+                            </div>
+                            <div style={{ fontSize: "0.74rem", color: "#64748b" }}>
+                              Verify this package when collecting from donor
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 

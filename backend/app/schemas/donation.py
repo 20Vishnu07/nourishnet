@@ -13,6 +13,7 @@ class DonationCreate(BaseModel):
     expiry_time: datetime
     pickup_lat: float = Field(..., ge=-90, le=90)
     pickup_lng: float = Field(..., ge=-180, le=180)
+    image_url: str | None = None
 
 
 class DonationUpdate(BaseModel):
@@ -23,6 +24,7 @@ class DonationUpdate(BaseModel):
     pickup_lat: float | None = Field(default=None, ge=-90, le=90)
     pickup_lng: float | None = Field(default=None, ge=-180, le=180)
     status: DonationStatus | None = None
+    image_url: str | None = None
 
 
 class DonationResponse(BaseModel):
@@ -35,6 +37,7 @@ class DonationResponse(BaseModel):
     pickup_lat: float
     pickup_lng: float
     status: DonationStatus
+    image_url: str | None = None
     created_at: datetime
     donor: UserResponse | None = None
 

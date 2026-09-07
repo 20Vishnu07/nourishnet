@@ -44,6 +44,7 @@ async def create_donation(
         expiry_time=donation.expiry_time,
         pickup_lat=donation.pickup_lat,
         pickup_lng=donation.pickup_lng,
+        image_url=donation.image_url,
         status=DonationStatus.available,
     )
     db.add(db_donation)
@@ -59,6 +60,7 @@ async def create_donation(
         "expiry_time": db_donation.expiry_time.isoformat(),
         "pickup_lat": db_donation.pickup_lat,
         "pickup_lng": db_donation.pickup_lng,
+        "image_url": db_donation.image_url,
         "status": db_donation.status.value,
         "donor_id": db_donation.donor_id,
     })

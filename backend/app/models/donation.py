@@ -39,6 +39,7 @@ class Donation(Base):
     status: Mapped[DonationStatus] = mapped_column(
         SAEnum(DonationStatus), default=DonationStatus.available
     )
+    image_url: Mapped[str | None] = mapped_column(String, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()
     )

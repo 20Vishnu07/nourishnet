@@ -502,4 +502,86 @@ def test_prediction_trained_donor_with_history():
     assert data["confidence"] >= 0.65
 
 
+# --- Volunteer Coordination & Live GPS Tracking Tests ---
+
+
+def test_register_multiple_users_without_phone():
+    """Verify that multiple users registering without phone don't collide."""
+    reg1 = client.post(
+        "/auth/register",
+        json={
+            "email": "testvol1@example.com",
+            "password": "password123",
+            "name": "Volunteer One",
+            "role": "volunteer",
+        },
+    )
+    assert reg1.status_code == 200
+
+    reg2 = client.post(
+        "/auth/register",
+        json={
+            "email": "testvol2@example.com",
+            "password": "password123",
+            "name": "Volunteer Two",
+            "role": "volunteer",
+        },
+    )
+    assert reg2.status_code == 200
+
+
+def test_volunteer_coordination_and_live_tracking():
+    # 1. Setup donor, NGO, and volunteer
+    donor, donor_token = _create_user_and_get_token("+911234567890", "donor", "Live Food Donor")
+    ngo, ngo_token = _create_user_and_get_token("+911234567891", "ngo", "Community Shelter NGO")
+    vol, vol_token = _create_user_and_get_token("+911234567892", "volunteer", "Speedy Volunteer")
+
+    # 2. Donor posts a donation
+    donation = _create_test_donation(donor_token, donor["id"]).json()
+
+    # 3. NGO claims the donation with needs_volunteer=False initially
+    claim_resp = client.post(
+        "/claims/",
+        json={"donation_id": donation["id"], "ngo_id": ngo["id"], "needs_volunteer": False},
+    )
+    assert claim_resp.status_code == 201
+    claim = claim_resp.json()
+    assert claim["needs_volunteer"] is False
+    assert claim["volunteer_id"] is None
+
+    # 4. NGO decides to request a volunteer for delivery
+    req_resp = client.post(f"/claims/{claim['id']}/request-volunteer?needs_volunteer=true")
+    assert req_resp.status_code == 200
+    assert req_resp.json()["needs_volunteer"] is True
+
+    # 5. Volunteer queries available deliveries
+    avail_resp = client.get("/claims/?available_for_volunteer=true")
+    assert avail_resp.status_code == 200
+    avail_claims = avail_resp.json()
+    assert any(c["id"] == claim["id"] for c in avail_claims)
+
+    # 6. Volunteer accepts the delivery
+    accept_resp = client.post(f"/claims/{claim['id']}/accept?volunteer_id={vol['id']}")
+    assert accept_resp.status_code == 200
+    accepted = accept_resp.json()
+    assert accepted["volunteer_id"] == vol["id"]
+    assert accepted["status"] == "assigned"
+
+    # Claim should no longer be in available list
+    avail_after = client.get("/claims/?available_for_volunteer=true").json()
+    assert not any(c["id"] == claim["id"] for c in avail_after)
+
+    # 7. Volunteer streams live GPS location
+    loc_resp = client.post(
+        f"/claims/{claim['id']}/location",
+        json={"lat": 13.0850, "lng": 80.2720},
+    )
+    assert loc_resp.status_code == 200
+    loc_data = loc_resp.json()
+    assert loc_data["volunteer_lat"] == pytest.approx(13.0850, abs=0.001)
+    assert loc_data["volunteer_lng"] == pytest.approx(80.2720, abs=0.001)
+    assert loc_data["volunteer_updated_at"] is not None
+
+
+
 

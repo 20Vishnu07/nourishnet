@@ -52,11 +52,12 @@ def register_user(request: UserRegisterRequest, db: Session = Depends(get_db)):
             detail="Email is already registered. Please sign in instead.",
         )
 
-    # Provide safe fallback phone in case old DB schema has NOT NULL/UNIQUE on phone
+    # Provide safe unique fallback phone in case old DB schema has NOT NULL/UNIQUE on phone
+    import uuid
     phone_val = (
         request.phone.strip()
         if request.phone and request.phone.strip()
-        else f"usr-{clean_email.split('@')[0][:12]}"
+        else f"+91{uuid.uuid4().int % 10**10:010d}"
     )
 
     new_user = User(

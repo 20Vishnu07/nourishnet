@@ -2,14 +2,22 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 
 export interface WebSocketMessage {
-  type: "NEW_DONATION" | "CLAIM_STATUS_UPDATED";
+  type: "NEW_DONATION" | "CLAIM_STATUS_UPDATED" | "VOLUNTEER_LOCATION_UPDATED" | "VOLUNTEER_REQUEST_CREATED";
   donation?: any;
   claim?: any;
+  claim_id?: number;
+  ngo_id?: number;
+  volunteer_id?: number;
+  lat?: number;
+  lng?: number;
+  status?: string;
 }
 
 interface UseRealtimeOptions {
   onNewDonation?: (donation: any) => void;
   onClaimStatusUpdated?: (claim: any) => void;
+  onVolunteerLocationUpdated?: (data: any) => void;
+  onVolunteerRequestCreated?: (claim: any) => void;
   onPollFallback?: () => void;
   pollIntervalMs?: number;
 }
@@ -17,6 +25,8 @@ interface UseRealtimeOptions {
 export function useRealtimeUpdates({
   onNewDonation,
   onClaimStatusUpdated,
+  onVolunteerLocationUpdated,
+  onVolunteerRequestCreated,
   onPollFallback,
   pollIntervalMs = 10000,
 }: UseRealtimeOptions = {}) {
@@ -78,6 +88,10 @@ export function useRealtimeUpdates({
             onNewDonation(data.donation);
           } else if (data.type === "CLAIM_STATUS_UPDATED" && onClaimStatusUpdated && data.claim) {
             onClaimStatusUpdated(data.claim);
+          } else if (data.type === "VOLUNTEER_LOCATION_UPDATED" && onVolunteerLocationUpdated) {
+            onVolunteerLocationUpdated(data);
+          } else if (data.type === "VOLUNTEER_REQUEST_CREATED" && onVolunteerRequestCreated && data.claim) {
+            onVolunteerRequestCreated(data.claim);
           }
         } catch (err) {
           console.warn("[Realtime] Malformed message received:", err);
@@ -112,7 +126,15 @@ export function useRealtimeUpdates({
       console.warn("[Realtime] Failed to initialize WebSocket:", err);
       startFallbackPolling();
     }
-  }, [token, onNewDonation, onClaimStatusUpdated, startFallbackPolling, stopFallbackPolling]);
+  }, [
+    token,
+    onNewDonation,
+    onClaimStatusUpdated,
+    onVolunteerLocationUpdated,
+    onVolunteerRequestCreated,
+    startFallbackPolling,
+    stopFallbackPolling,
+  ]);
 
   useEffect(() => {
     connect();

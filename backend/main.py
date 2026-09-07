@@ -33,8 +33,33 @@ def run_db_migration():
                 if "address" not in columns:
                     logger.info("Migrating users table: adding address column")
                     conn.execute(text("ALTER TABLE users ADD COLUMN address VARCHAR(255)"))
-                conn.commit()
-                logger.info("Database migration completed successfully.")
+                # Try dropping phone not-null constraint on Postgres if exists
+                try:
+                    conn.execute(text("ALTER TABLE users ALTER COLUMN phone DROP NOT NULL"))
+                except Exception:
+                    pass
+                try:
+                    conn.execute(text("ALTER TABLE users DROP CONSTRAINT IF EXISTS users_phone_key"))
+                except Exception:
+                    pass
+
+            if "claims" in inspector.get_table_names():
+                c_columns = [c["name"] for c in inspector.get_columns("claims")]
+                if "needs_volunteer" not in c_columns:
+                    logger.info("Migrating claims table: adding needs_volunteer column")
+                    conn.execute(text("ALTER TABLE claims ADD COLUMN needs_volunteer BOOLEAN DEFAULT FALSE"))
+                if "volunteer_lat" not in c_columns:
+                    logger.info("Migrating claims table: adding volunteer_lat column")
+                    conn.execute(text("ALTER TABLE claims ADD COLUMN volunteer_lat FLOAT"))
+                if "volunteer_lng" not in c_columns:
+                    logger.info("Migrating claims table: adding volunteer_lng column")
+                    conn.execute(text("ALTER TABLE claims ADD COLUMN volunteer_lng FLOAT"))
+                if "volunteer_updated_at" not in c_columns:
+                    logger.info("Migrating claims table: adding volunteer_updated_at column")
+                    conn.execute(text("ALTER TABLE claims ADD COLUMN volunteer_updated_at TIMESTAMP"))
+
+            conn.commit()
+            logger.info("Database migration completed successfully.")
     except Exception as e:
         logger.error(f"Error during database migration: {e}")
 

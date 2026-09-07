@@ -1,7 +1,7 @@
 import enum
 from datetime import datetime
 
-from sqlalchemy import Enum as SAEnum, DateTime, ForeignKey, Integer, func
+from sqlalchemy import Boolean, DateTime, Enum as SAEnum, Float, ForeignKey, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -30,6 +30,18 @@ class Claim(Base):
     )
     status: Mapped[ClaimStatus] = mapped_column(
         SAEnum(ClaimStatus), default=ClaimStatus.pending
+    )
+    needs_volunteer: Mapped[bool] = mapped_column(
+        Boolean, default=False
+    )
+    volunteer_lat: Mapped[float | None] = mapped_column(
+        Float, nullable=True
+    )
+    volunteer_lng: Mapped[float | None] = mapped_column(
+        Float, nullable=True
+    )
+    volunteer_updated_at: Mapped[datetime | None] = mapped_column(
+        DateTime, nullable=True
     )
     claimed_at: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now()

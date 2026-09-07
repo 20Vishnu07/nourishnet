@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { apiFetch } from "../../config/api";
 import { useGeolocation } from "../../hooks/useGeolocation";
 import DonationMap, { type DonationMarker } from "../../components/Map/DonationMap";
+import LiveTrackingMap from "../../components/Map/LiveTrackingMap";
 import { useRealtimeUpdates } from "../../hooks/useRealtimeUpdates";
 
 interface Donation extends DonationMarker {
@@ -16,9 +17,18 @@ interface Claim {
   donation_id: number;
   ngo_id: number;
   volunteer_id: number | null;
+  needs_volunteer?: boolean;
+  volunteer_lat?: number | null;
+  volunteer_lng?: number | null;
+  volunteer_updated_at?: string | null;
   status: string;
   claimed_at: string;
   donation?: Donation | null;
+  volunteer?: {
+    id: number;
+    name: string;
+    phone?: string | null;
+  } | null;
 }
 
 export default function NGODashboard() {
@@ -34,6 +44,8 @@ export default function NGODashboard() {
   const [error, setError] = useState<string | null>(null);
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
   const [liveNotification, setLiveNotification] = useState<string | null>(null);
+  const [expandedTrackingId, setExpandedTrackingId] = useState<number | null>(null);
+  const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
 
   const loadNearby = useCallback(async () => {
     setLoading(true);
@@ -66,14 +78,33 @@ export default function NGODashboard() {
     loadNearby();
   }, [loadNearby]);
 
-  const onClaimStatusUpdated = useCallback(() => {
+  const onClaimStatusUpdated = useCallback((updatedClaim: any) => {
+    setLiveNotification(`🔔 Real-time: Claim #${updatedClaim.id} updated (${updatedClaim.status})`);
     loadNearby();
     loadMyClaims();
   }, [loadNearby, loadMyClaims]);
 
+  const onVolunteerLocationUpdated = useCallback((data: { claim_id: number; lat: number; lng: number; status?: string }) => {
+    setMyClaims((prev) =>
+      prev.map((c) => {
+        if (c.id === data.claim_id) {
+          return {
+            ...c,
+            volunteer_lat: data.lat,
+            volunteer_lng: data.lng,
+            volunteer_updated_at: new Date().toISOString(),
+            status: data.status || c.status,
+          };
+        }
+        return c;
+      })
+    );
+  }, []);
+
   const { isConnected, isFallbackMode } = useRealtimeUpdates({
     onNewDonation,
     onClaimStatusUpdated,
+    onVolunteerLocationUpdated,
     onPollFallback: () => {
       loadNearby();
       loadMyClaims();
@@ -86,7 +117,7 @@ export default function NGODashboard() {
     loadMyClaims();
   }, [loadNearby, loadMyClaims]);
 
-  const handleClaim = async (donation: Donation) => {
+  const handleClaim = async (donation: Donation, requestVolunteerDelivery: boolean = false) => {
     setError(null);
     setClaimSuccess(null);
     try {
@@ -96,15 +127,36 @@ export default function NGODashboard() {
         body: {
           donation_id: donation.id,
           ngo_id: appUser?.id,
+          needs_volunteer: requestVolunteerDelivery,
         },
       });
       setClaimSuccess(t("ngo.claimSuccess", { foodType: donation.food_type }));
       setSelectedDonation(null);
-      // Refresh list and claims
       await loadNearby();
       await loadMyClaims();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to claim donation");
+    }
+  };
+
+  const handleToggleVolunteerRequest = async (claimId: number, needsVolunteer: boolean) => {
+    setActionLoadingId(claimId);
+    setError(null);
+    try {
+      await apiFetch(`/claims/${claimId}/request-volunteer?needs_volunteer=${needsVolunteer}`, {
+        method: "POST",
+        token,
+      });
+      setLiveNotification(
+        needsVolunteer
+          ? "🚗 Volunteer delivery requested! Available couriers have been notified."
+          : "Volunteer request cancelled (set to self-pickup)."
+      );
+      await loadMyClaims();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update volunteer request");
+    } finally {
+      setActionLoadingId(null);
     }
   };
 
@@ -308,11 +360,25 @@ export default function NGODashboard() {
             )}
           </div>
 
-          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", flexWrap: "wrap" }}>
             {selectedDonation.status === "available" && (
-              <button onClick={() => handleClaim(selectedDonation)} style={styles.claimBtn}>
-                📋 {t("ngo.claimThisDonation")}
-              </button>
+              <>
+                <button
+                  onClick={() => handleClaim(selectedDonation, false)}
+                  style={styles.claimBtn}
+                >
+                  📋 Claim (NGO Self-Pickup)
+                </button>
+                <button
+                  onClick={() => handleClaim(selectedDonation, true)}
+                  style={{
+                    ...styles.claimBtn,
+                    background: "#d97706",
+                  }}
+                >
+                  🚗 Claim & Request Volunteer Courier
+                </button>
+              </>
             )}
             <button
               onClick={() => setSelectedDonation(null)}
@@ -378,18 +444,22 @@ export default function NGODashboard() {
         <div style={styles.list}>
           {myClaims.map((claim) => {
             const donation = claim.donation;
+            const isTracking = expandedTrackingId === claim.id || (!expandedTrackingId && claim.status === "picked_up");
+            const hasVolunteer = Boolean(claim.volunteer_id);
+
             return (
               <div
                 key={claim.id}
                 style={{
                   ...styles.card,
-                  borderLeft: "4px solid #0284c7",
+                  borderLeft: `5px solid ${hasVolunteer ? "#d97706" : "#0284c7"}`,
                   flexDirection: "column",
                   alignItems: "stretch",
-                  gap: "0.6rem",
+                  gap: "0.75rem",
+                  cursor: "default",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
                   <div>
                     <strong style={{ fontSize: "1.05rem", color: "#0f172a" }}>
                       🍲 {donation ? donation.food_type : `Claim #${claim.id}`}
@@ -400,21 +470,35 @@ export default function NGODashboard() {
                       </span>
                     )}
                   </div>
-                  <span style={{
-                    fontSize: "0.75rem",
-                    fontWeight: 700,
-                    padding: "3px 10px",
-                    borderRadius: "12px",
-                    color: "white",
-                    background: claim.status === "delivered" ? "#10b981" : claim.status === "picked_up" ? "#8b5cf6" : "#0284c7",
-                    textTransform: "uppercase",
-                  }}>
-                    {claim.status.replace("_", " ")}
-                  </span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                    {claim.needs_volunteer && !hasVolunteer && (
+                      <span style={{
+                        fontSize: "0.72rem",
+                        padding: "3px 8px",
+                        borderRadius: "10px",
+                        background: "#fef3c7",
+                        color: "#b45309",
+                        fontWeight: 700,
+                      }}>
+                        ⏳ Volunteer Requested
+                      </span>
+                    )}
+                    <span style={{
+                      fontSize: "0.75rem",
+                      fontWeight: 700,
+                      padding: "3px 10px",
+                      borderRadius: "12px",
+                      color: "white",
+                      background: claim.status === "delivered" ? "#10b981" : claim.status === "picked_up" ? "#8b5cf6" : "#0284c7",
+                      textTransform: "uppercase",
+                    }}>
+                      {claim.status.replace("_", " ")}
+                    </span>
+                  </div>
                 </div>
 
                 {donation && (
-                  <div style={{ fontSize: "0.85rem", color: "#475569", display: "flex", flexDirection: "column", gap: "0.3rem" }}>
+                  <div style={{ fontSize: "0.85rem", color: "#475569", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
                     {donation.donor && (
                       <div>
                         👤 <strong>{t("ngo.donorDetails")}:</strong> {donation.donor.name} •{" "}
@@ -440,14 +524,147 @@ export default function NGODashboard() {
                           border: "1px solid #bae6fd",
                         }}
                       >
-                        🗺️ {t("ngo.viewOnMap")}
+                        🗺️ Google Maps
                       </a>
-                    </div>
-                    <div>
-                      ⏰ <strong>{t("ngo.expires")}:</strong> {new Date(donation.expiry_time).toLocaleString()}
                     </div>
                   </div>
                 )}
+
+                {/* VOLUNTEER COORDINATION & LIVE TRACKING PANEL */}
+                <div style={{
+                  background: "#f8fafc",
+                  borderRadius: "10px",
+                  padding: "0.85rem",
+                  border: "1px solid #e2e8f0",
+                  marginTop: "0.25rem",
+                }}>
+                  {hasVolunteer ? (
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px", marginBottom: "0.5rem" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <span style={{ fontSize: "1.2rem" }}>🚗</span>
+                          <div>
+                            <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "0.9rem" }}>
+                              Volunteer Driver: {claim.volunteer?.name || "Assigned Volunteer Courier"}
+                            </div>
+                            {claim.volunteer?.phone && (
+                              <div style={{ fontSize: "0.8rem" }}>
+                                <a href={`tel:${claim.volunteer.phone}`} style={{ color: "#d97706", fontWeight: 700, textDecoration: "none" }}>
+                                  📞 Call Courier: {claim.volunteer.phone}
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => setExpandedTrackingId(isTracking ? -1 : claim.id)}
+                          style={{
+                            background: isTracking ? "#0f172a" : "#d97706",
+                            color: "#ffffff",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "6px 12px",
+                            fontSize: "0.8rem",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                          }}
+                        >
+                          🗺️ {isTracking ? "Hide Live Map" : "View Live Driver GPS Map"}
+                        </button>
+                      </div>
+
+                      {/* Render Live Tracking Map */}
+                      {isTracking && donation && (
+                        <div style={{ marginTop: "0.75rem" }}>
+                          <LiveTrackingMap
+                            pickup={{
+                              lat: donation.pickup_lat,
+                              lng: donation.pickup_lng,
+                              label: `${donation.food_type} (${donation.donor?.name || "Donor"})`,
+                            }}
+                            destination={{
+                              lat: lat,
+                              lng: lng,
+                              label: appUser?.org_name || appUser?.name || "NGO Facility",
+                            }}
+                            volunteer={
+                              claim.volunteer_lat && claim.volunteer_lng
+                                ? {
+                                    lat: claim.volunteer_lat,
+                                    lng: claim.volunteer_lng,
+                                    name: claim.volunteer?.name,
+                                    phone: claim.volunteer?.phone || undefined,
+                                    updatedAt: claim.volunteer_updated_at,
+                                  }
+                                : {
+                                    lat: donation.pickup_lat + 0.002,
+                                    lng: donation.pickup_lng + 0.002,
+                                    name: claim.volunteer?.name,
+                                    phone: claim.volunteer?.phone || undefined,
+                                  }
+                            }
+                            status={claim.status}
+                            height="320px"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ) : claim.needs_volunteer ? (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <span className="pulse-dot" style={{ background: "#d97706" }} />
+                        <span style={{ fontSize: "0.85rem", color: "#92400e", fontWeight: 600 }}>
+                          Searching for nearby volunteer couriers...
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => handleToggleVolunteerRequest(claim.id, false)}
+                        disabled={actionLoadingId === claim.id}
+                        style={{
+                          background: "#ffffff",
+                          border: "1px solid #cbd5e1",
+                          color: "#64748b",
+                          borderRadius: "6px",
+                          padding: "4px 10px",
+                          fontSize: "0.78rem",
+                          fontWeight: 600,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Cancel Request (Pick Up Myself)
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                      <span style={{ fontSize: "0.82rem", color: "#64748b" }}>
+                        Need help picking up this food?
+                      </span>
+                      <button
+                        onClick={() => handleToggleVolunteerRequest(claim.id, true)}
+                        disabled={actionLoadingId === claim.id}
+                        style={{
+                          background: "#d97706",
+                          color: "#ffffff",
+                          border: "none",
+                          borderRadius: "6px",
+                          padding: "5px 12px",
+                          fontSize: "0.8rem",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        🚗 Request Volunteer Delivery
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             );
           })}

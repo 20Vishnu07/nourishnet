@@ -24,7 +24,10 @@ export default function LandingPage() {
 
   const displayError = localError || error;
 
-  const openSignIn = () => {
+  const openSignIn = (role?: UserRole | React.MouseEvent) => {
+    if (typeof role === "string") {
+      setSelectedRole(role);
+    }
     setAuthMode("signin");
     setLocalError(null);
     clearError();
@@ -189,7 +192,7 @@ export default function LandingPage() {
               </div>
             ) : (
               <button
-                onClick={openSignIn}
+                onClick={() => openSignIn()}
                 style={landingStyles.navSignInBtn}
               >
                 {t("landing.signInBtn")}
@@ -359,6 +362,24 @@ export default function LandingPage() {
               >
                 {t("landing.donorCardAction")} →
               </button>
+              <button
+                type="button"
+                onClick={() => openSignIn("donor")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: colors.primary,
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  marginTop: "8px",
+                  display: "block",
+                  textAlign: "center",
+                  width: "100%",
+                }}
+              >
+                Already registered? Sign in as Donor →
+              </button>
             </div>
           </div>
 
@@ -388,6 +409,24 @@ export default function LandingPage() {
               >
                 {t("landing.ngoCardAction")} →
               </button>
+              <button
+                type="button"
+                onClick={() => openSignIn("ngo")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: colors.ngoAccent,
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  marginTop: "8px",
+                  display: "block",
+                  textAlign: "center",
+                  width: "100%",
+                }}
+              >
+                Already registered? Sign in as NGO →
+              </button>
             </div>
           </div>
 
@@ -416,6 +455,24 @@ export default function LandingPage() {
                 style={landingStyles.roleActionBtnVolunteer}
               >
                 {t("landing.volunteerCardAction")} →
+              </button>
+              <button
+                type="button"
+                onClick={() => openSignIn("volunteer")}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: colors.accentHover,
+                  fontSize: "0.82rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  marginTop: "8px",
+                  display: "block",
+                  textAlign: "center",
+                  width: "100%",
+                }}
+              >
+                Already registered? Sign in as Volunteer →
               </button>
             </div>
           </div>
@@ -594,6 +651,41 @@ export default function LandingPage() {
               </div>
             )}
 
+            {/* ROLE SELECTION TABS (Top of Modal) */}
+            <div style={{ marginBottom: "1rem" }}>
+              <div style={landingStyles.modalRoleTabs}>
+                {(["donor", "ngo", "volunteer"] as const).map((r) => (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => { setSelectedRole(r); setLocalError(null); }}
+                    style={{
+                      ...landingStyles.modalRoleTab,
+                      ...(selectedRole === r ? landingStyles.modalRoleTabActive : {}),
+                    }}
+                  >
+                    {r === "donor" && `🍲 ${t("auth.donorRole")}`}
+                    {r === "ngo" && `🏢 ${t("auth.ngoRole")}`}
+                    {r === "volunteer" && `🚗 ${t("auth.volunteerRole")}`}
+                  </button>
+                ))}
+              </div>
+              <div style={{
+                marginTop: "6px",
+                fontSize: "0.78rem",
+                color: colors.textMuted,
+                textAlign: "center",
+                background: "#f8fafc",
+                padding: "4px 8px",
+                borderRadius: "6px",
+                border: "1px solid #e2e8f0",
+              }}>
+                {selectedRole === "donor" && "🍲 Food Donor: Donate surplus meals directly to local shelters"}
+                {selectedRole === "ngo" && "🏢 NGO & Shelter: Claim surplus food & request volunteer couriers"}
+                {selectedRole === "volunteer" && "🚗 Volunteer Courier: Pick up food & share live GPS tracking"}
+              </div>
+            </div>
+
             {/* AUTH MODE TOGGLE TABS */}
             <div style={{
               display: "flex",
@@ -646,6 +738,24 @@ export default function LandingPage() {
             {/* SIGN IN FORM */}
             {authMode === "signin" && (
               <form onSubmit={handleSignIn} style={landingStyles.modalForm}>
+                <div style={{
+                  background: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: "8px",
+                  padding: "6px 10px",
+                  fontSize: "0.8rem",
+                  color: "#15803d",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}>
+                  <span>{selectedRole === "donor" ? "🍲" : selectedRole === "ngo" ? "🏢" : "🚗"}</span>
+                  <span>
+                    Signing in as: <strong>{selectedRole === "donor" ? "Food Donor" : selectedRole === "ngo" ? "NGO / Shelter" : "Volunteer Courier"}</strong>
+                  </span>
+                </div>
+
                 <label style={landingStyles.fieldLabel}>{t("auth.emailLabel")}</label>
                 <input
                   type="email"
@@ -673,7 +783,7 @@ export default function LandingPage() {
                   style={landingStyles.modalSubmitBtn}
                   disabled={isLoading}
                 >
-                  {isLoading ? t("auth.signingIn") : t("auth.signIn")}
+                  {isLoading ? t("auth.signingIn") : `Sign In as ${selectedRole === "donor" ? "Donor" : selectedRole === "ngo" ? "NGO" : "Volunteer"}`}
                 </button>
 
                 <button
@@ -690,7 +800,7 @@ export default function LandingPage() {
                     padding: "4px",
                   }}
                 >
-                  {t("auth.noAccount")}
+                  Need an account? Sign up as {selectedRole === "donor" ? "Donor" : selectedRole === "ngo" ? "NGO" : "Volunteer"}
                 </button>
               </form>
             )}
@@ -698,29 +808,30 @@ export default function LandingPage() {
             {/* SIGN UP FORM */}
             {authMode === "signup" && (
               <form onSubmit={handleSignUp} style={landingStyles.modalForm}>
-                <label style={landingStyles.fieldLabel}>{t("auth.iAmA")}</label>
-                <div style={landingStyles.modalRoleTabs}>
-                  {(["donor", "ngo", "volunteer"] as const).map((r) => (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => setSelectedRole(r)}
-                      style={{
-                        ...landingStyles.modalRoleTab,
-                        ...(selectedRole === r ? landingStyles.modalRoleTabActive : {}),
-                      }}
-                    >
-                      {r === "donor" && `🍲 ${t("auth.donorRole")}`}
-                      {r === "ngo" && `🏢 ${t("auth.ngoRole")}`}
-                      {r === "volunteer" && `🚗 ${t("auth.volunteerRole")}`}
-                    </button>
-                  ))}
+                <div style={{
+                  background: "#eff6ff",
+                  border: "1px solid #bfdbfe",
+                  borderRadius: "8px",
+                  padding: "6px 10px",
+                  fontSize: "0.8rem",
+                  color: "#1d4ed8",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "6px",
+                }}>
+                  <span>{selectedRole === "donor" ? "🍲" : selectedRole === "ngo" ? "🏢" : "🚗"}</span>
+                  <span>
+                    Creating account as: <strong>{selectedRole === "donor" ? "Food Donor" : selectedRole === "ngo" ? "NGO / Shelter" : "Volunteer Courier"}</strong>
+                  </span>
                 </div>
 
-                <label style={landingStyles.fieldLabel}>{t("auth.yourName")}</label>
+                <label style={landingStyles.fieldLabel}>
+                  {selectedRole === "ngo" ? "Representative / Contact Name *" : t("auth.yourName")}
+                </label>
                 <input
                   type="text"
-                  placeholder={t("auth.namePlaceholder")}
+                  placeholder={selectedRole === "ngo" ? "e.g. John Doe (Coordinator)" : t("auth.namePlaceholder")}
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   style={landingStyles.modalInput}
@@ -752,24 +863,29 @@ export default function LandingPage() {
 
                 {(selectedRole === "ngo" || selectedRole === "donor") && (
                   <>
-                    <label style={landingStyles.fieldLabel}>{t("auth.orgLabel")}</label>
+                    <label style={landingStyles.fieldLabel}>
+                      {selectedRole === "ngo" ? "Organization / NGO Name *" : t("auth.orgLabel")}
+                    </label>
                     <input
                       type="text"
-                      placeholder={t("auth.orgPlaceholder")}
+                      placeholder={selectedRole === "ngo" ? "e.g. Care & Share Shelter, Food Hope" : t("auth.orgPlaceholder")}
                       value={orgName}
                       onChange={(e) => setOrgName(e.target.value)}
                       style={landingStyles.modalInput}
                       disabled={isLoading}
+                      required={selectedRole === "ngo"}
                     />
                   </>
                 )}
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
                   <div>
-                    <label style={landingStyles.fieldLabel}>{t("auth.phoneOptional")}</label>
+                    <label style={landingStyles.fieldLabel}>
+                      {selectedRole === "volunteer" ? "Mobile Phone *" : t("auth.phoneOptional")}
+                    </label>
                     <input
                       type="tel"
-                      placeholder={t("auth.phoneOptionalPlaceholder")}
+                      placeholder={selectedRole === "volunteer" ? "+91 98765 43210" : t("auth.phoneOptionalPlaceholder")}
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       style={landingStyles.modalInput}
@@ -794,7 +910,7 @@ export default function LandingPage() {
                   style={landingStyles.modalSubmitBtn}
                   disabled={isLoading}
                 >
-                  {isLoading ? t("auth.signingUp") : t("auth.signUp")}
+                  {isLoading ? t("auth.signingUp") : `Register as ${selectedRole === "donor" ? "Donor" : selectedRole === "ngo" ? "NGO" : "Volunteer"}`}
                 </button>
 
                 <button

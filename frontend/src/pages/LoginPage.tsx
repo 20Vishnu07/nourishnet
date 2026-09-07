@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth, type UserRole } from "../contexts/AuthContext";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { colors, shadows } from "../styles/theme";
@@ -10,13 +10,17 @@ type AuthMode = "signin" | "signup";
 export default function LoginPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { login, register, verifyAndLogin, error, clearError, isLoading } = useAuth();
 
-  const [mode, setMode] = useState<AuthMode>("signin");
+  const initialRole = (searchParams.get("role") as UserRole) || "donor";
+  const initialMode = (searchParams.get("mode") as AuthMode) || "signin";
+
+  const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState<UserRole>("donor");
+  const [role, setRole] = useState<UserRole>(["donor", "ngo", "volunteer"].includes(initialRole) ? initialRole : "donor");
   const [phone, setPhone] = useState("");
   const [orgName, setOrgName] = useState("");
   const [address, setAddress] = useState("");
@@ -114,6 +118,12 @@ export default function LoginPage() {
     }
   };
 
+  const roleTitles = {
+    donor: { title: "Food Donor", icon: "🍲", desc: "Donate surplus meals to local communities" },
+    ngo: { title: "NGO & Shelter", icon: "🏢", desc: "Claim food donations & dispatch volunteer couriers" },
+    volunteer: { title: "Volunteer Courier", icon: "🚗", desc: "Deliver food with step-by-step live tracking" },
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.card}>
@@ -128,6 +138,42 @@ export default function LoginPage() {
           <div style={{ fontSize: "2.5rem", marginBottom: "4px" }}>🌱</div>
           <h1 style={styles.title}>{t("common.appName")}</h1>
           <p style={styles.subtitle}>{t("common.subtitle")}</p>
+        </div>
+
+        {/* ROLE SELECTION TABS (Visible for both Sign In and Sign Up) */}
+        <div style={{ marginBottom: "1.25rem" }}>
+          <label style={{ ...styles.label, display: "block", marginBottom: "6px" }}>
+            Select Your Role:
+          </label>
+          <div style={styles.roleGroup}>
+            {(["donor", "ngo", "volunteer"] as const).map((r) => (
+              <button
+                key={r}
+                type="button"
+                onClick={() => setRole(r)}
+                style={{
+                  ...styles.roleBtn,
+                  ...(role === r ? styles.roleBtnActive : {}),
+                }}
+              >
+                {r === "donor" && `🍲 ${t("auth.donorRole")}`}
+                {r === "ngo" && `🏢 ${t("auth.ngoRole")}`}
+                {r === "volunteer" && `🚗 ${t("auth.volunteerRole")}`}
+              </button>
+            ))}
+          </div>
+          <div style={{
+            marginTop: "6px",
+            fontSize: "0.76rem",
+            color: colors.textMuted,
+            textAlign: "center",
+            background: "#f8fafc",
+            padding: "4px 8px",
+            borderRadius: "6px",
+            border: "1px solid #e2e8f0",
+          }}>
+            {roleTitles[role].icon} <strong>{roleTitles[role].title}</strong>: {roleTitles[role].desc}
+          </div>
         </div>
 
         {/* MODE TABS (Sign In / Sign Up) */}
@@ -166,6 +212,22 @@ export default function LoginPage() {
         {/* SIGN IN FORM */}
         {mode === "signin" && (
           <form onSubmit={handleSignIn} style={styles.form}>
+            <div style={{
+              background: "#f0fdf4",
+              border: "1px solid #bbf7d0",
+              borderRadius: "8px",
+              padding: "6px 10px",
+              fontSize: "0.8rem",
+              color: "#15803d",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}>
+              <span>{roleTitles[role].icon}</span>
+              <span>Signing in as: <strong>{roleTitles[role].title}</strong></span>
+            </div>
+
             <label style={styles.label}>{t("auth.emailLabel")}</label>
             <input
               type="email"
@@ -189,7 +251,7 @@ export default function LoginPage() {
             />
 
             <button type="submit" style={styles.button} disabled={isLoading}>
-              {isLoading ? t("auth.signingIn") : t("auth.signIn")}
+              {isLoading ? t("auth.signingIn") : `Sign In as ${roleTitles[role].title}`}
             </button>
 
             <button
@@ -197,7 +259,7 @@ export default function LoginPage() {
               onClick={() => { setMode("signup"); setLocalError(null); }}
               style={styles.linkBtn}
             >
-              {t("auth.noAccount")}
+              Need an account? Sign up as {roleTitles[role].title}
             </button>
           </form>
         )}
@@ -205,34 +267,31 @@ export default function LoginPage() {
         {/* SIGN UP FORM */}
         {mode === "signup" && (
           <form onSubmit={handleSignUp} style={styles.form}>
-            <label style={styles.label}>{t("auth.iAmA")}</label>
-            <div style={styles.roleGroup}>
-              {(["donor", "ngo", "volunteer"] as const).map((r) => (
-                <button
-                  key={r}
-                  type="button"
-                  onClick={() => setRole(r)}
-                  style={{
-                    ...styles.roleBtn,
-                    ...(role === r ? styles.roleBtnActive : {}),
-                  }}
-                >
-                  {r === "donor" && `🍲 ${t("auth.donorRole")}`}
-                  {r === "ngo" && `🏢 ${t("auth.ngoRole")}`}
-                  {r === "volunteer" && `🚗 ${t("auth.volunteerRole")}`}
-                </button>
-              ))}
+            <div style={{
+              background: "#eff6ff",
+              border: "1px solid #bfdbfe",
+              borderRadius: "8px",
+              padding: "6px 10px",
+              fontSize: "0.8rem",
+              color: "#1d4ed8",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}>
+              <span>{roleTitles[role].icon}</span>
+              <span>Creating account as: <strong>{roleTitles[role].title}</strong></span>
             </div>
 
-            <label style={styles.label}>{t("auth.yourName")}</label>
+            <label style={styles.label}>
+              {role === "ngo" ? "Contact Person / Representative Name *" : t("auth.yourName")}
+            </label>
             <input
               type="text"
-              placeholder={t("auth.namePlaceholder")}
+              placeholder={role === "ngo" ? "e.g. Sarah Jenkins (Coordinator)" : t("auth.namePlaceholder")}
               value={name}
               onChange={(e) => setName(e.target.value)}
               style={styles.input}
-              disabled={isLoading}
-              required
             />
 
             <label style={styles.label}>{t("auth.emailLabel")}</label>

@@ -118,5 +118,45 @@ class ConnectionManager:
         for recipient_id in recipient_ids:
             await self.send_to_user(recipient_id, message)
 
+    async def broadcast_volunteer_location(
+        self,
+        claim_id: int,
+        ngo_id: int,
+        volunteer_id: int,
+        lat: float,
+        lng: float,
+        status: str | None = None,
+    ):
+        """Broadcast live GPS coordinates of volunteer to the claiming NGO and volunteer."""
+        message = {
+            "type": "VOLUNTEER_LOCATION_UPDATED",
+            "claim_id": claim_id,
+            "ngo_id": ngo_id,
+            "volunteer_id": volunteer_id,
+            "lat": lat,
+            "lng": lng,
+            "status": status,
+        }
+        await self.send_to_user(ngo_id, message)
+        await self.send_to_user(volunteer_id, message)
+
+    async def broadcast_volunteer_request(self, claim_data: dict):
+        """Broadcast new delivery request needing volunteer pickup to all active volunteers."""
+        message = {
+            "type": "VOLUNTEER_REQUEST_CREATED",
+            "claim": claim_data,
+        }
+        dead_sockets = set()
+        for socket, meta in self.socket_user_meta.items():
+            if meta.get("role") == "volunteer":
+                try:
+                    await socket.send_json(message)
+                except Exception as e:
+                    logger.warning(f"Error broadcasting volunteer request to socket: {e}")
+                    dead_sockets.add(socket)
+
+        for socket in dead_sockets:
+            self.disconnect(socket)
+
 
 manager = ConnectionManager()

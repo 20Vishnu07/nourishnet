@@ -25,6 +25,10 @@ export default function LandingPage() {
   const displayError = localError || error;
 
   const openSignIn = (role?: UserRole | React.MouseEvent) => {
+    if (appUser) {
+      navigate("/dashboard");
+      return;
+    }
     if (typeof role === "string") {
       setSelectedRole(role);
     }
@@ -34,9 +38,13 @@ export default function LandingPage() {
     setIsAuthOpen(true);
   };
 
-  const openAuthWithRole = (role: UserRole) => {
+  const openAuthWithRole = (role: UserRole, mode: "signin" | "signup" = "signin") => {
+    if (appUser) {
+      navigate("/dashboard");
+      return;
+    }
     setSelectedRole(role);
-    setAuthMode("signup");
+    setAuthMode(mode);
     setLocalError(null);
     clearError();
     setIsAuthOpen(true);

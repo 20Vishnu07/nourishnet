@@ -317,9 +317,9 @@ export default function DonorDashboard() {
                 📦 <strong>{d.quantity} {d.unit}</strong> · ⏰ Expires: {new Date(d.expiry_time).toLocaleString()}
               </p>
               <div style={{ marginTop: "0.5rem", fontSize: "0.85rem", color: "#475569", display: "flex", flexWrap: "wrap", alignItems: "center", gap: "0.75rem" }}>
-                <span>📍 <strong>Pickup:</strong> {d.pickup_lat.toFixed(4)}, {d.pickup_lng.toFixed(4)}</span>
+                <span>📍 <strong>Pickup:</strong> {d.pickup_lat != null ? Number(d.pickup_lat).toFixed(4) : "13.0827"}, {d.pickup_lng != null ? Number(d.pickup_lng).toFixed(4) : "80.2707"}</span>
                 <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${d.pickup_lat},${d.pickup_lng}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${d.pickup_lat ?? 13.0827},${d.pickup_lng ?? 80.2707}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{

@@ -7,9 +7,15 @@ import VolunteerDashboard from "./volunteer/VolunteerDashboard";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { colors, shadows } from "../styles/theme";
 
+import { useState } from "react";
+import type { UserRole } from "../contexts/AuthContext";
+
 export default function DashboardPage() {
   const { t } = useTranslation();
   const { appUser, logout } = useAuth();
+
+  const userRoleNormalized = (appUser?.role?.toLowerCase() as UserRole) || "donor";
+  const [activeRole, setActiveRole] = useState<UserRole>(userRoleNormalized);
 
   if (!appUser) return null;
 
@@ -31,7 +37,7 @@ export default function DashboardPage() {
     volunteer: { bg: colors.accentLight, color: colors.accentHover, border: "rgba(217, 119, 6, 0.2)" },
   };
 
-  const currentTheme = roleTheme[appUser.role] ?? roleTheme.donor;
+  const currentTheme = roleTheme[activeRole] ?? roleTheme.donor;
 
   return (
     <div style={styles.container}>
@@ -50,6 +56,40 @@ export default function DashboardPage() {
             </div>
           </Link>
 
+          {/* Role Switching Tabs */}
+          <div style={{
+            display: "flex",
+            background: "#f1f5f9",
+            padding: "3px",
+            borderRadius: "10px",
+            gap: "3px",
+          }}>
+            {(["donor", "ngo", "volunteer"] as const).map((r) => (
+              <button
+                key={r}
+                onClick={() => setActiveRole(r)}
+                style={{
+                  border: "none",
+                  padding: "5px 12px",
+                  borderRadius: "7px",
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  background: activeRole === r ? "#ffffff" : "transparent",
+                  color: activeRole === r ? colors.textDark : colors.textMuted,
+                  boxShadow: activeRole === r ? shadows.sm : "none",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "4px",
+                  transition: "all 0.2s",
+                }}
+              >
+                <span>{roleEmoji[r]}</span>
+                <span>{roleLabels[r]}</span>
+              </button>
+            ))}
+          </div>
+
           <div style={styles.userInfo}>
             <LanguageSwitcher />
             <div
@@ -60,8 +100,8 @@ export default function DashboardPage() {
                 border: `1px solid ${currentTheme.border}`,
               }}
             >
-              <span>{roleEmoji[appUser.role]}</span>
-              <span>{roleLabels[appUser.role] || appUser.role}</span>
+              <span>{roleEmoji[activeRole]}</span>
+              <span>{roleLabels[activeRole] || activeRole}</span>
             </div>
 
             <div style={styles.userProfile}>
@@ -79,9 +119,9 @@ export default function DashboardPage() {
       </header>
 
       <main style={styles.main}>
-        {appUser.role === "donor" && <DonorDashboard />}
-        {appUser.role === "ngo" && <NGODashboard />}
-        {appUser.role === "volunteer" && <VolunteerDashboard />}
+        {activeRole === "donor" && <DonorDashboard />}
+        {activeRole === "ngo" && <NGODashboard />}
+        {activeRole === "volunteer" && <VolunteerDashboard />}
       </main>
     </div>
   );

@@ -49,7 +49,9 @@ export default function LocationPicker({
   onDetectLocation,
   isAutoDetected,
 }: LocationPickerProps) {
-  const center: LatLngExpression = [position.lat, position.lng];
+  const safeLat = typeof position?.lat === "number" && !isNaN(position.lat) ? position.lat : 13.0827;
+  const safeLng = typeof position?.lng === "number" && !isNaN(position.lng) ? position.lng : 80.2707;
+  const center: LatLngExpression = [safeLat, safeLng];
 
   return (
     <div style={{ height: "320px", borderRadius: "10px", overflow: "hidden", position: "relative" }}>
@@ -62,11 +64,11 @@ export default function LocationPicker({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        <Marker position={[position.lat, position.lng]}>
-          <Popup>Pickup location: {position.lat.toFixed(4)}, {position.lng.toFixed(4)}</Popup>
+        <Marker position={[safeLat, safeLng]}>
+          <Popup>Pickup location: {safeLat.toFixed(4)}, {safeLng.toFixed(4)}</Popup>
         </Marker>
         <ClickHandler onPositionChange={onPositionChange} />
-        <RecenterMap lat={position.lat} lng={position.lng} />
+        <RecenterMap lat={safeLat} lng={safeLng} />
       </MapContainer>
 
       {/* Auto Location Banner / Control */}
@@ -89,7 +91,7 @@ export default function LocationPicker({
         <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#334155" }}>
           <span>{isAutoDetected ? "📍 Auto-detected GPS:" : "📍 Pickup location:"}</span>
           <strong style={{ color: "#059669" }}>
-            {position.lat.toFixed(4)}, {position.lng.toFixed(4)}
+            {safeLat.toFixed(4)}, {safeLng.toFixed(4)}
           </strong>
         </div>
         {onDetectLocation && (

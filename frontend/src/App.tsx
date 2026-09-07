@@ -27,16 +27,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={appUser ? (
-          <ProtectedRoute>
-            <DashboardPage />
-          </ProtectedRoute>
-        ) : (
-          <LandingPage />
-        )}
-      />
+      <Route path="/" element={<LandingPage />} />
       <Route
         path="/dashboard"
         element={

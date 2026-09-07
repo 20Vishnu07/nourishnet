@@ -1,4 +1,4 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { colors, shadows } from "../styles/theme";
@@ -8,14 +8,7 @@ import { useAuth, type UserRole } from "../contexts/AuthContext";
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { login, register, verifyAndLogin, error, clearError, isLoading, appUser } = useAuth();
-
-  // If logged in, redirect straight to dashboard
-  useEffect(() => {
-    if (appUser) {
-      navigate("/dashboard", { replace: true });
-    }
-  }, [appUser, navigate]);
+  const { login, register, verifyAndLogin, error, clearError, isLoading, appUser, logout } = useAuth();
 
   // Auth modal states
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -169,12 +162,39 @@ export default function LandingPage() {
 
           <div style={landingStyles.navRight}>
             <LanguageSwitcher />
-            <button
-              onClick={openSignIn}
-              style={landingStyles.navSignInBtn}
-            >
-              {t("landing.signInBtn")}
-            </button>
+            {appUser ? (
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  style={{
+                    ...landingStyles.navSignInBtn,
+                    backgroundColor: colors.primary,
+                    color: "#ffffff",
+                    border: "none",
+                  }}
+                >
+                  🚀 {t("common.appName")} Dashboard
+                </button>
+                <button
+                  onClick={logout}
+                  style={{
+                    ...landingStyles.navSignInBtn,
+                    backgroundColor: "transparent",
+                    color: colors.textMuted,
+                    borderColor: colors.border,
+                  }}
+                >
+                  {t("common.logout")}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={openSignIn}
+                style={landingStyles.navSignInBtn}
+              >
+                {t("landing.signInBtn")}
+              </button>
+            )}
           </div>
         </div>
       </header>

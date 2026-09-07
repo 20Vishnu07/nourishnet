@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import DonorDashboard from "./donor/DonorDashboard";
 import NGODashboard from "./ngo/NGODashboard";
@@ -36,7 +37,7 @@ export default function DashboardPage() {
     <div style={styles.container}>
       <header style={styles.header}>
         <div style={styles.headerContent}>
-          <div style={styles.brand}>
+          <Link to="/" style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: "10px" }}>
             <span style={{ fontSize: "1.5rem" }}>🌱</span>
             <div>
               <h1 style={styles.title}>{t("common.appName")}</h1>
@@ -47,7 +48,7 @@ export default function DashboardPage() {
                 </span>
               </div>
             </div>
-          </div>
+          </Link>
 
           <div style={styles.userInfo}>
             <LanguageSwitcher />

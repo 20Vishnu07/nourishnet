@@ -30,14 +30,34 @@ export default function DonorDashboard() {
   const [expiryHours, setExpiryHours] = useState("6");
   const [pickupLat, setPickupLat] = useState(lat);
   const [pickupLng, setPickupLng] = useState(lng);
+  const [detectingLocation, setDetectingLocation] = useState(false);
 
-  // Automatically update pickup coordinates when GPS/IP auto-detection succeeds
+  // Automatically update pickup coordinates when GPS/IP auto-detection succeeds on mount
   useEffect(() => {
     if (lat && lng) {
       setPickupLat(lat);
       setPickupLng(lng);
     }
   }, [lat, lng]);
+
+  const handleAutoDetect = async () => {
+    setDetectingLocation(true);
+    setError(null);
+    try {
+      const coords = await requestLocation();
+      if (coords) {
+        setPickupLat(coords.lat);
+        setPickupLng(coords.lng);
+        setSuccess(
+          `📍 Location auto-detected: ${coords.city || "Current Location"} (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`
+        );
+      }
+    } catch {
+      setError("Failed to auto-detect location. You can select coordinates directly on the map.");
+    } finally {
+      setDetectingLocation(false);
+    }
+  };
   const [myDonations, setMyDonations] = useState<Donation[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -290,8 +310,9 @@ export default function DonorDashboard() {
               setPickupLat(newLat);
               setPickupLng(newLng);
             }}
-            onDetectLocation={requestLocation}
+            onDetectLocation={handleAutoDetect}
             isAutoDetected={isAutoDetected}
+            detecting={detectingLocation}
           />
         </div>
 

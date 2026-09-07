@@ -20,6 +20,7 @@ interface LocationPickerProps {
   onPositionChange: (lat: number, lng: number) => void;
   onDetectLocation?: () => void;
   isAutoDetected?: boolean;
+  detecting?: boolean;
 }
 
 function ClickHandler({
@@ -48,6 +49,7 @@ export default function LocationPicker({
   onPositionChange,
   onDetectLocation,
   isAutoDetected,
+  detecting,
 }: LocationPickerProps) {
   const safeLat = typeof position?.lat === "number" && !isNaN(position.lat) ? position.lat : 13.0827;
   const safeLng = typeof position?.lng === "number" && !isNaN(position.lng) ? position.lng : 80.2707;
@@ -89,7 +91,7 @@ export default function LocationPicker({
         fontSize: "0.8rem",
       }}>
         <div style={{ display: "flex", alignItems: "center", gap: "6px", color: "#334155" }}>
-          <span>{isAutoDetected ? "📍 Auto-detected GPS:" : "📍 Pickup location:"}</span>
+          <span>{isAutoDetected ? "📍 Auto-detected Location:" : "📍 Pickup location:"}</span>
           <strong style={{ color: "#059669" }}>
             {safeLat.toFixed(4)}, {safeLng.toFixed(4)}
           </strong>
@@ -98,21 +100,23 @@ export default function LocationPicker({
           <button
             type="button"
             onClick={onDetectLocation}
+            disabled={detecting}
             style={{
-              background: "#059669",
+              background: detecting ? "#94a3b8" : "#059669",
               color: "#ffffff",
               border: "none",
               borderRadius: "6px",
-              padding: "4px 10px",
+              padding: "5px 12px",
               fontSize: "0.75rem",
               fontWeight: 700,
-              cursor: "pointer",
+              cursor: detecting ? "not-allowed" : "pointer",
               display: "flex",
               alignItems: "center",
               gap: "4px",
+              transition: "all 0.2s",
             }}
           >
-            🎯 Auto-Detect
+            {detecting ? "⏳ Detecting..." : "🎯 Auto-Detect"}
           </button>
         )}
       </div>

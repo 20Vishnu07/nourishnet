@@ -1,15 +1,71 @@
 import { useState, useEffect, useCallback } from "react";
 
-interface LocationState {
+export interface LocationCoords {
   lat: number;
   lng: number;
   city?: string;
+  source?: "gps" | "ip" | "default";
+}
+
+interface LocationState extends LocationCoords {
   error: string | null;
   loading: boolean;
   isAutoDetected: boolean;
 }
 
-export const DEFAULT_LOCATION = { lat: 13.0827, lng: 80.2707, city: "Chennai" }; // Default fallback
+export const DEFAULT_LOCATION: LocationCoords = {
+  lat: 13.0827,
+  lng: 80.2707,
+  city: "Chennai",
+  source: "default",
+};
+
+// Fast, resilient IP Geolocation with multiple fallback providers
+async function queryIpLocation(): Promise<LocationCoords | null> {
+  // Provider 1: ipwho.is (fast, HTTPS, CORS, no key)
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch("https://ipwho.is/", { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const data = await res.json();
+      if (typeof data.latitude === "number" && typeof data.longitude === "number") {
+        return {
+          lat: data.latitude,
+          lng: data.longitude,
+          city: data.city || data.region || "Your City",
+          source: "ip",
+        };
+      }
+    }
+  } catch {
+    // try next provider
+  }
+
+  // Provider 2: freeipapi.com (fast, HTTPS, CORS, no key)
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const res = await fetch("https://freeipapi.com/api/json", { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      const data = await res.json();
+      if (typeof data.latitude === "number" && typeof data.longitude === "number") {
+        return {
+          lat: data.latitude,
+          lng: data.longitude,
+          city: data.cityName || "Your City",
+          source: "ip",
+        };
+      }
+    }
+  } catch {
+    // all providers failed
+  }
+
+  return null;
+}
 
 export function useGeolocation() {
   const [location, setLocation] = useState<LocationState>({
@@ -19,81 +75,63 @@ export function useGeolocation() {
     isAutoDetected: false,
   });
 
-  // Fallback to IP-based approximate location if GPS is blocked or unavailable
-  const fetchIpLocation = useCallback(async () => {
-    try {
-      const res = await fetch("https://ipapi.co/json/");
-      if (res.ok) {
-        const data = await res.json();
-        if (data.latitude && data.longitude) {
+  const requestLocation = useCallback(async (): Promise<LocationCoords> => {
+    setLocation((prev) => ({ ...prev, loading: true, error: null }));
+
+    // Step 1: Try HTML5 Browser GPS (3.5s timeout, standard accuracy for immediate network/wifi lock)
+    if (typeof window !== "undefined" && "geolocation" in navigator) {
+      try {
+        const gpsCoords = await new Promise<LocationCoords | null>((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              resolve({
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                city: "GPS Location",
+                source: "gps",
+              });
+            },
+            () => resolve(null),
+            { enableHighAccuracy: false, timeout: 3500, maximumAge: 60000 }
+          );
+        });
+
+        if (gpsCoords) {
           setLocation({
-            lat: data.latitude,
-            lng: data.longitude,
-            city: data.city || data.region || "Your Area",
+            ...gpsCoords,
             error: null,
             loading: false,
             isAutoDetected: true,
           });
-          return true;
+          return gpsCoords;
         }
+      } catch {
+        // Fall through to IP geolocation
       }
-    } catch {
-      // Fallback silently
     }
-    return false;
-  }, []);
 
-  const requestLocation = useCallback(() => {
-    if (!navigator.geolocation) {
-      fetchIpLocation().then((success) => {
-        if (!success) {
-          setLocation((prev) => ({
-            ...prev,
-            error: "Geolocation is not supported by your browser",
-            loading: false,
-            isAutoDetected: false,
-          }));
-        }
+    // Step 2: If GPS is unavailable, denied, or timed out, query high-reliability IP geolocation
+    const ipCoords = await queryIpLocation();
+    if (ipCoords) {
+      setLocation({
+        ...ipCoords,
+        error: null,
+        loading: false,
+        isAutoDetected: true,
       });
-      return;
+      return ipCoords;
     }
 
-    setLocation((prev) => ({ ...prev, loading: true, error: null }));
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocation({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          error: null,
-          loading: false,
-          isAutoDetected: true,
-        });
-      },
-      async (err) => {
-        // If GPS is denied or unavailable, auto-detect location via IP
-        const ipSuccess = await fetchIpLocation();
-        if (ipSuccess) return;
-
-        let errorMessage = "Unable to get your location";
-        if (err.code === err.PERMISSION_DENIED) {
-          errorMessage =
-            "Location permission was denied. You can manually pick a location or click 'Detect My Location'.";
-        } else if (err.code === err.POSITION_UNAVAILABLE) {
-          errorMessage = "Location unavailable. Using default location.";
-        } else if (err.code === err.TIMEOUT) {
-          errorMessage = "Location request timed out. Using default location.";
-        }
-        setLocation({
-          ...DEFAULT_LOCATION,
-          error: errorMessage,
-          loading: false,
-          isAutoDetected: false,
-        });
-      },
-      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 },
-    );
-  }, [fetchIpLocation]);
+    // Step 3: Default fallback
+    const fallback: LocationCoords = { ...DEFAULT_LOCATION };
+    setLocation({
+      ...fallback,
+      error: "Location auto-detection unavailable. Using default location.",
+      loading: false,
+      isAutoDetected: false,
+    });
+    return fallback;
+  }, []);
 
   useEffect(() => {
     requestLocation();

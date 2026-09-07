@@ -46,6 +46,17 @@ export default function VolunteerDashboard() {
   const { appUser, token } = useAuth();
   const { lat: userLat, lng: userLng, isAutoDetected, requestLocation } = useGeolocation();
 
+  const [currentLat, setCurrentLat] = useState(userLat);
+  const [currentLng, setCurrentLng] = useState(userLng);
+  const [detectingGps, setDetectingGps] = useState(false);
+
+  useEffect(() => {
+    if (userLat && userLng) {
+      setCurrentLat(userLat);
+      setCurrentLng(userLng);
+    }
+  }, [userLat, userLng]);
+
   const [activeTab, setActiveTab] = useState<"available" | "my_deliveries">("available");
   const [claims, setClaims] = useState<Claim[]>([]);
   const [availableClaims, setAvailableClaims] = useState<Claim[]>([]);
@@ -198,6 +209,31 @@ export default function VolunteerDashboard() {
     };
   }, [isSharingLocation, activeDelivery, postLocation]);
 
+  const handleAutoDetectGps = async () => {
+    setDetectingGps(true);
+    setError(null);
+    try {
+      const coords = await requestLocation();
+      if (coords) {
+        setCurrentLat(coords.lat);
+        setCurrentLng(coords.lng);
+        setSuccess(
+          `🎯 Location auto-detected: ${coords.city || "Current Area"} (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`
+        );
+        if (activeDelivery) {
+          await postLocation(activeDelivery.id, coords.lat, coords.lng);
+          setSuccess(
+            `🎯 GPS auto-detected & broadcasted to NGO: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
+          );
+        }
+      }
+    } catch {
+      setError("Failed to auto-detect location. Please check browser permissions.");
+    } finally {
+      setDetectingGps(false);
+    }
+  };
+
   // Accept a delivery request
   const handleAcceptDelivery = async (claimId: number) => {
     if (!appUser?.id) return;
@@ -213,7 +249,7 @@ export default function VolunteerDashboard() {
       await refreshAll();
 
       // Immediately post initial location
-      postLocation(claimId, userLat, userLng);
+      postLocation(claimId, currentLat, currentLng);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to accept delivery");
     }
@@ -324,25 +360,27 @@ export default function VolunteerDashboard() {
           borderRadius: "8px",
           border: isAutoDetected ? "1px solid #a7f3d0" : "1px solid #e2e8f0",
         }}>
-          📍 {isAutoDetected ? "GPS Auto-Detected" : "Volunteer GPS"}: {userLat.toFixed(4)}, {userLng.toFixed(4)}
+          📍 {isAutoDetected ? "Location Auto-Detected" : "Volunteer Location"}: {currentLat.toFixed(4)}, {currentLng.toFixed(4)}
         </span>
 
         <div style={{ display: "flex", gap: "0.5rem" }}>
           <button
             type="button"
-            onClick={requestLocation}
+            onClick={handleAutoDetectGps}
+            disabled={detectingGps}
             style={{
               ...styles.refreshBtn,
-              background: "#d97706",
+              background: detectingGps ? "#94a3b8" : "#d97706",
               color: "#ffffff",
               border: "none",
               fontWeight: 700,
               marginBottom: 0,
+              cursor: detectingGps ? "not-allowed" : "pointer",
             }}
           >
-            🎯 Recalibrate GPS
+            {detectingGps ? "⏳ Detecting..." : "🎯 Auto-Detect / Recalibrate GPS"}
           </button>
-          <button onClick={refreshAll} style={{ ...styles.refreshBtn, marginBottom: 0 }} disabled={loading}>
+          <button onClick={refreshAll} style={{ ...styles.refreshBtn, marginBottom: 0 }} disabled={loading || detectingGps}>
             {loading ? t("common.loading") : `🔄 ${t("common.refresh")}`}
           </button>
         </div>

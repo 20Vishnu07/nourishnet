@@ -46,13 +46,25 @@ export default function NGODashboard() {
   const [liveNotification, setLiveNotification] = useState<string | null>(null);
   const [expandedTrackingId, setExpandedTrackingId] = useState<number | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
+  const [radarLat, setRadarLat] = useState(lat);
+  const [radarLng, setRadarLng] = useState(lng);
+  const [detectingLocation, setDetectingLocation] = useState(false);
 
-  const loadNearby = useCallback(async () => {
+  useEffect(() => {
+    if (lat && lng) {
+      setRadarLat(lat);
+      setRadarLng(lng);
+    }
+  }, [lat, lng]);
+
+  const loadNearby = useCallback(async (targetLat?: number, targetLng?: number) => {
+    const qLat = typeof targetLat === "number" ? targetLat : radarLat;
+    const qLng = typeof targetLng === "number" ? targetLng : radarLng;
     setLoading(true);
     setError(null);
     try {
       const result = await apiFetch<Donation[]>(
-        `/donations/nearby?lat=${lat}&lng=${lng}&radius_km=${radiusKm}`,
+        `/donations/nearby?lat=${qLat}&lng=${qLng}&radius_km=${radiusKm}`,
         { token },
       );
       setDonations(result);
@@ -61,7 +73,27 @@ export default function NGODashboard() {
     } finally {
       setLoading(false);
     }
-  }, [lat, lng, radiusKm, token]);
+  }, [radarLat, radarLng, radiusKm, token]);
+
+  const handleAutoDetectLocation = async () => {
+    setDetectingLocation(true);
+    setError(null);
+    try {
+      const coords = await requestLocation();
+      if (coords) {
+        setRadarLat(coords.lat);
+        setRadarLng(coords.lng);
+        setLiveNotification(
+          `🎯 Radar auto-detected: ${coords.city || "Current Area"} (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}) — map updated!`
+        );
+        await loadNearby(coords.lat, coords.lng);
+      }
+    } catch {
+      setError("Failed to auto-detect location. Please check browser permissions.");
+    } finally {
+      setDetectingLocation(false);
+    }
+  };
 
   const loadMyClaims = useCallback(async () => {
     if (!appUser?.id) return;
@@ -244,32 +276,34 @@ export default function NGODashboard() {
             borderRadius: "8px",
             border: isAutoDetected ? "1px solid #a7f3d0" : "1px solid #e2e8f0",
           }}>
-            📍 {isAutoDetected ? "GPS Auto-Detected" : "Current Radar"}: {lat.toFixed(4)}, {lng.toFixed(4)}
+            📍 {isAutoDetected ? "Location Auto-Detected" : "Current Radar"}: {radarLat.toFixed(4)}, {radarLng.toFixed(4)}
           </span>
         </div>
 
         <div style={{ display: "flex", gap: "0.5rem" }}>
           <button
             type="button"
-            onClick={requestLocation}
+            onClick={handleAutoDetectLocation}
+            disabled={detectingLocation || loading}
             style={{
               ...styles.refreshBtn,
-              background: "#0284c7",
+              background: detectingLocation ? "#94a3b8" : "#0284c7",
               color: "#ffffff",
               border: "none",
               fontWeight: 700,
+              cursor: detectingLocation ? "not-allowed" : "pointer",
             }}
           >
-            🎯 Auto-Detect Location
+            {detectingLocation ? "⏳ Detecting..." : "🎯 Auto-Detect Location"}
           </button>
-          <button onClick={loadNearby} style={styles.refreshBtn} disabled={loading}>
+          <button onClick={() => loadNearby()} style={styles.refreshBtn} disabled={loading || detectingLocation}>
             {loading ? t("common.loading") : `🔄 ${t("common.refresh")}`}
           </button>
         </div>
       </div>
 
       <DonationMap
-        center={{ lat, lng }}
+        center={{ lat: radarLat, lng: radarLng }}
         donations={donations}
         onDonationClick={(d) => setSelectedDonation(d as Donation)}
       />

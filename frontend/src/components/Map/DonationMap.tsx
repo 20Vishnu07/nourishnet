@@ -1,4 +1,5 @@
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useEffect } from "react";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import { type LatLngExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
@@ -11,6 +12,16 @@ L.Icon.Default.mergeOptions({
   iconUrl: markerIcon,
   shadowUrl: markerShadow,
 });
+
+function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
+  const map = useMap();
+  useEffect(() => {
+    if (lat && lng) {
+      map.setView([lat, lng], map.getZoom());
+    }
+  }, [lat, lng, map]);
+  return null;
+}
 
 export interface DonationMarker {
   id: number;
@@ -40,7 +51,9 @@ export default function DonationMap({
   donations,
   onDonationClick,
 }: DonationMapProps) {
-  const mapCenter: LatLngExpression = [center.lat, center.lng];
+  const safeLat = typeof center?.lat === "number" && !isNaN(center.lat) ? center.lat : 13.0827;
+  const safeLng = typeof center?.lng === "number" && !isNaN(center.lng) ? center.lng : 80.2707;
+  const mapCenter: LatLngExpression = [safeLat, safeLng];
 
   return (
     <div style={{ height: "400px", borderRadius: "8px", overflow: "hidden" }}>
@@ -53,6 +66,7 @@ export default function DonationMap({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        <RecenterMap lat={safeLat} lng={safeLng} />
         {donations.length === 0 && (
           <div
             style={{

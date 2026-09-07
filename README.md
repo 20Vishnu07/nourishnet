@@ -1,11 +1,12 @@
 # 🌱 NourishNet — Surplus Food Redistribution Platform
 
-[![Live Frontend](https://img.shields.io/badge/Vercel-Live%20App-000000?style=for-the-badge&logo=vercel)](https://nourishnet-kappa.vercel.app)
+[![Live Website](https://img.shields.io/badge/Production-nourishnet.me-059669?style=for-the-badge&logo=google-chrome&logoColor=white)](https://nourishnet.me)
+[![Live Frontend](https://img.shields.io/badge/Vercel-nourishnet.me-000000?style=for-the-badge&logo=vercel)](https://nourishnet.me)
 [![Live Backend](https://img.shields.io/badge/Render-Live%20API-46E3B7?style=for-the-badge&logo=render)](https://nourishnet-yrql.onrender.com)
 [![Swagger Docs](https://img.shields.io/badge/FastAPI-Interactive%20Docs-009688?style=for-the-badge&logo=fastapi)](https://nourishnet-yrql.onrender.com/docs)
 [![Python Version](https://img.shields.io/badge/Python-3.12.8-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)
 [![React Version](https://img.shields.io/badge/React-18.3.1-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
-[![Tests](https://img.shields.io/badge/Pytest-25%2F25%20Passed-brightgreen?style=for-the-badge)](https://github.com/20Vishnu07/nourishnet)
+[![Tests](https://img.shields.io/badge/Pytest-26%2F26%20Passed-brightgreen?style=for-the-badge)](https://github.com/20Vishnu07/nourishnet)
 
 > **Zero Food Waste. 100% Human Dignity.**  
 > NourishNet connects restaurants, caterers, and households with verified local NGOs and volunteer delivery champions in real-time through interactive Leaflet maps, AI predictive surplus forecasting, and native WebSocket coordination.
@@ -14,7 +15,8 @@
 
 ## 🌐 Live Deployments
 
-- **Web Application:** [https://nourishnet-kappa.vercel.app](https://nourishnet-kappa.vercel.app)
+- **Official Website:** [https://nourishnet.me](https://nourishnet.me)
+- **Vercel Mirror:** [https://nourishnet-kappa.vercel.app](https://nourishnet-kappa.vercel.app)
 - **Backend API:** [https://nourishnet-yrql.onrender.com](https://nourishnet-yrql.onrender.com)
 - **Interactive Swagger Documentation:** [https://nourishnet-yrql.onrender.com/docs](https://nourishnet-yrql.onrender.com/docs)
 - **API Health Check:** [https://nourishnet-yrql.onrender.com/health](https://nourishnet-yrql.onrender.com/health)
@@ -58,7 +60,7 @@
 ```
                                   +-----------------------------+
                                   |     Vercel Edge Network     |
-                                  |  nourishnet-kappa.vercel.app|
+                                  |        nourishnet.me        |
                                   +--------------+--------------+
                                                  |
                        HTTPS REST API Calls      |      WebSockets (wss://)

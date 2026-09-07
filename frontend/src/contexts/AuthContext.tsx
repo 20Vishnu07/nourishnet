@@ -49,7 +49,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  register: (payload: RegisterPayload) => Promise<void>;
+  register: (payload: RegisterPayload, autoLogin?: boolean) => Promise<any>;
   verifyAndLogin: (
     idToken: string,
     name?: string,
@@ -153,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const register = useCallback(async (payload: RegisterPayload) => {
+  const register = useCallback(async (payload: RegisterPayload, autoLogin: boolean = false) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
       const response = await apiFetch<TokenResponse>("/auth/register", {
@@ -170,21 +170,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
 
-      localStorage.setItem("nourishnet_token", response.access_token);
-      localStorage.setItem("nourishnet_user", JSON.stringify(response.user));
+      if (autoLogin) {
+        localStorage.setItem("nourishnet_token", response.access_token);
+        localStorage.setItem("nourishnet_user", JSON.stringify(response.user));
 
-      if (response.user.language_pref) {
-        i18n.changeLanguage(response.user.language_pref);
+        if (response.user.language_pref) {
+          i18n.changeLanguage(response.user.language_pref);
+        }
+
+        setState((prev) => ({
+          ...prev,
+          token: response.access_token,
+          appUser: response.user,
+          isNewUser: true,
+          isLoading: false,
+          error: null,
+        }));
+      } else {
+        setState((prev) => ({
+          ...prev,
+          isLoading: false,
+          error: null,
+        }));
       }
 
-      setState((prev) => ({
-        ...prev,
-        token: response.access_token,
-        appUser: response.user,
-        isNewUser: true,
-        isLoading: false,
-        error: null,
-      }));
+      return response;
     } catch (err) {
       const message = err instanceof Error ? err.message : "Registration failed";
       setState((prev) => ({

@@ -25,12 +25,14 @@ export default function LoginPage() {
   const [orgName, setOrgName] = useState("");
   const [address, setAddress] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
+  const [localSuccess, setLocalSuccess] = useState<string | null>(null);
 
   const displayError = localError || error;
 
   const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
     setLocalError(null);
+    setLocalSuccess(null);
     clearError();
 
     if (!email.trim() || !password) {
@@ -84,8 +86,14 @@ export default function LoginPage() {
         org_name: orgName.trim() || undefined,
         address: address.trim() || undefined,
         language_pref: i18n.language || "en",
-      });
-      navigate("/dashboard", { replace: true });
+      }, false);
+
+      // Return to sign in form, prefill email, clear password & show success
+      setMode("signin");
+      setPassword("");
+      setLocalSuccess(
+        `🎉 Account successfully created for ${roleTitles[role].title}! Please enter your password to sign in.`
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed";
       if (
@@ -204,6 +212,27 @@ export default function LoginPage() {
           <div style={styles.error}>
             <span>⚠️ {displayError}</span>
             <button onClick={() => { setLocalError(null); clearError(); }} style={styles.dismissBtn}>
+              ✕
+            </button>
+          </div>
+        )}
+
+        {localSuccess && (
+          <div style={{
+            background: "#ecfdf5",
+            border: "1px solid #a7f3d0",
+            borderRadius: "8px",
+            padding: "0.75rem 1rem",
+            color: "#065f46",
+            fontSize: "0.85rem",
+            fontWeight: 600,
+            marginBottom: "1rem",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}>
+            <span>{localSuccess}</span>
+            <button onClick={() => setLocalSuccess(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#065f46", fontSize: "0.9rem" }}>
               ✕
             </button>
           </div>

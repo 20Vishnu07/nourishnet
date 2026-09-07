@@ -21,6 +21,7 @@ export default function LandingPage() {
   const [orgName, setOrgName] = useState("");
   const [address, setAddress] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
+  const [localSuccess, setLocalSuccess] = useState<string | null>(null);
 
   const displayError = localError || error;
 
@@ -34,6 +35,7 @@ export default function LandingPage() {
     }
     setAuthMode("signin");
     setLocalError(null);
+    setLocalSuccess(null);
     clearError();
     setIsAuthOpen(true);
   };
@@ -46,6 +48,7 @@ export default function LandingPage() {
     setSelectedRole(role);
     setAuthMode(mode);
     setLocalError(null);
+    setLocalSuccess(null);
     clearError();
     setIsAuthOpen(true);
   };
@@ -53,6 +56,7 @@ export default function LandingPage() {
   const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
     setLocalError(null);
+    setLocalSuccess(null);
     clearError();
 
     if (!email.trim() || !password) {
@@ -108,9 +112,14 @@ export default function LandingPage() {
         org_name: orgName.trim() || undefined,
         address: address.trim() || undefined,
         language_pref: i18n.language || "en",
-      });
-      setIsAuthOpen(false);
-      navigate("/dashboard", { replace: true });
+      }, false);
+
+      // Return to sign in tab, clear password, and show success message
+      setAuthMode("signin");
+      setPassword("");
+      setLocalSuccess(
+        `🎉 Account created successfully as ${selectedRole === "donor" ? "Food Donor" : selectedRole === "ngo" ? "NGO / Shelter" : "Volunteer Courier"}! Please enter your password to sign in.`
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed";
       if (
@@ -653,6 +662,30 @@ export default function LandingPage() {
                     clearError();
                   }}
                   style={{ background: "none", border: "none", cursor: "pointer", color: "#c33" }}
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {localSuccess && (
+              <div style={{
+                background: "#ecfdf5",
+                border: "1px solid #a7f3d0",
+                borderRadius: "8px",
+                padding: "0.75rem 1rem",
+                color: "#065f46",
+                fontSize: "0.85rem",
+                fontWeight: 600,
+                marginBottom: "1rem",
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}>
+                <span>{localSuccess}</span>
+                <button
+                  onClick={() => setLocalSuccess(null)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#065f46", fontSize: "0.9rem" }}
                 >
                   ✕
                 </button>

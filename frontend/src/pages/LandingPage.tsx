@@ -22,6 +22,11 @@ export default function LandingPage() {
   const [address, setAddress] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
   const [localSuccess, setLocalSuccess] = useState<string | null>(null);
+  const [signupSuccessData, setSignupSuccessData] = useState<{
+    name: string;
+    email: string;
+    role: UserRole;
+  } | null>(null);
 
   const displayError = localError || error;
 
@@ -130,7 +135,7 @@ export default function LandingPage() {
         language_pref: i18n.language || "en",
       }, false);
 
-      // Return to sign in tab, prefill email, clear password, and show success message
+      // Switch to sign-in tab, prefill email, clear password
       setAuthMode("signin");
       setPassword("");
       const roleDisplayNames: Record<UserRole, string> = {
@@ -141,6 +146,12 @@ export default function LandingPage() {
       setLocalSuccess(
         `🎉 Account created successfully for ${name.trim()} as ${roleDisplayNames[selectedRole]}! Please enter your password to sign in.`
       );
+      // Trigger the celebratory popup modal
+      setSignupSuccessData({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        role: selectedRole,
+      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed";
       if (msg.toLowerCase().includes("already registered") || msg.toLowerCase().includes("already exists")) {
@@ -1032,6 +1043,199 @@ export default function LandingPage() {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* CELEBRATION / ACCOUNT CREATED SUCCESS POPUP MODAL */}
+      {signupSuccessData && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.75)",
+            backdropFilter: "blur(8px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1200,
+            padding: "1rem",
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setSignupSuccessData(null);
+            }
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "24px",
+              padding: "2.5rem 2rem",
+              maxWidth: "460px",
+              width: "100%",
+              textAlign: "center",
+              boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.35)",
+              position: "relative",
+              border: "2px solid #86efac",
+            }}
+          >
+            <button
+              onClick={() => setSignupSuccessData(null)}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "16px",
+                background: "#f1f5f9",
+                border: "none",
+                borderRadius: "50%",
+                width: "34px",
+                height: "34px",
+                cursor: "pointer",
+                fontSize: "1.1rem",
+                color: "#64748b",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                lineHeight: 1,
+              }}
+              title="Close"
+            >
+              ✕
+            </button>
+
+            {/* Glowing Success Badge */}
+            <div
+              style={{
+                width: "80px",
+                height: "80px",
+                borderRadius: "50%",
+                backgroundColor: "#dcfce7",
+                color: "#16a34a",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: "2.75rem",
+                margin: "0 auto 1.25rem",
+                boxShadow: "0 0 0 10px #f0fdf4",
+              }}
+            >
+              🎉
+            </div>
+
+            {/* Title */}
+            <h2
+              style={{
+                fontSize: "1.55rem",
+                fontWeight: 800,
+                color: "#0f172a",
+                margin: "0 0 0.5rem",
+              }}
+            >
+              Account Successfully Created!
+            </h2>
+
+            <p
+              style={{
+                fontSize: "0.95rem",
+                color: "#475569",
+                lineHeight: 1.5,
+                margin: "0 0 1.25rem",
+              }}
+            >
+              Welcome to NourishNet, <strong>{signupSuccessData.name}</strong>! Your account has been registered successfully.
+            </p>
+
+            {/* Account Details Box */}
+            <div
+              style={{
+                backgroundColor: "#f8fafc",
+                border: "1px solid #e2e8f0",
+                borderRadius: "14px",
+                padding: "1rem",
+                marginBottom: "1.5rem",
+                textAlign: "left",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "0.5rem",
+                  fontSize: "0.85rem",
+                }}
+              >
+                <span style={{ color: "#64748b" }}>Registered Role:</span>
+                <span
+                  style={{
+                    fontWeight: 700,
+                    color:
+                      signupSuccessData.role === "donor"
+                        ? colors.primary
+                        : signupSuccessData.role === "ngo"
+                        ? colors.ngoAccent
+                        : colors.accentHover,
+                    backgroundColor: "#f1f5f9",
+                    padding: "2px 8px",
+                    borderRadius: "6px",
+                  }}
+                >
+                  {signupSuccessData.role === "donor" && "🍲 Food Donor"}
+                  {signupSuccessData.role === "ngo" && "🏢 NGO & Shelter"}
+                  {signupSuccessData.role === "volunteer" && "🚗 Volunteer Courier"}
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "0.5rem",
+                  fontSize: "0.85rem",
+                }}
+              >
+                <span style={{ color: "#64748b" }}>Email ID:</span>
+                <span style={{ fontWeight: 600, color: "#0f172a" }}>
+                  {signupSuccessData.email}
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: "0.85rem",
+                }}
+              >
+                <span style={{ color: "#64748b" }}>Status:</span>
+                <span style={{ fontWeight: 700, color: "#16a34a" }}>
+                  ● Ready to Sign In
+                </span>
+              </div>
+            </div>
+
+            {/* Proceed to Sign In button */}
+            <button
+              onClick={() => {
+                setSignupSuccessData(null);
+                setAuthMode("signin");
+                setIsAuthOpen(true);
+              }}
+              style={{
+                width: "100%",
+                padding: "0.9rem",
+                borderRadius: "12px",
+                border: "none",
+                backgroundColor: colors.primary,
+                color: "#ffffff",
+                fontSize: "1rem",
+                fontWeight: 700,
+                cursor: "pointer",
+                boxShadow: shadows.md,
+                transition: "all 0.2s",
+              }}
+            >
+              👉 Proceed to Sign In →
+            </button>
           </div>
         </div>
       )}

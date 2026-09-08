@@ -16,9 +16,14 @@ L.Icon.Default.mergeOptions({
 function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
   useEffect(() => {
-    if (lat && lng) {
+    // Fix leaflet grey tiles on hidden or resized containers
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+    if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
       map.setView([lat, lng], map.getZoom());
     }
+    return () => clearTimeout(timer);
   }, [lat, lng, map]);
   return null;
 }

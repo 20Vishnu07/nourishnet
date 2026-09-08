@@ -33,6 +33,7 @@ class UserRegisterRequest(BaseModel):
 class UserLoginRequest(BaseModel):
     email: str = Field(..., max_length=120)
     password: str = Field(..., max_length=100)
+    role: UserRole | None = None
 
 
 class UserResponse(BaseModel):

@@ -130,6 +130,15 @@ def login_user(request: UserLoginRequest, db: Session = Depends(get_db)):
             detail="Incorrect password. Please try again.",
         )
 
+    # Validate that user registered role matches the login portal role
+    if request.role is not None and user.role != request.role:
+        expected_role = user.role.value.capitalize()
+        attempted_role = request.role.value.capitalize()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"Role mismatch: This account is registered as a {expected_role}. You cannot sign in through the {attempted_role} portal.",
+        )
+
     access_token = create_access_token(
         data={"user_id": user.id, "role": user.role.value}
     )

@@ -115,13 +115,21 @@ function BoundsFitter({
   const map = useMap();
 
   useEffect(() => {
-    if (points.length === 0) return;
-    if (points.length === 1 && points[0]) {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+
+    if (points.length === 0) return () => clearTimeout(timer);
+    if (points.length === 1 && points[0] && !isNaN(points[0].lat) && !isNaN(points[0].lng)) {
       map.setView([points[0].lat, points[0].lng], 14);
-      return;
+      return () => clearTimeout(timer);
     }
-    const bounds: LatLngBoundsExpression = points.map((p) => [p.lat, p.lng]);
-    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    const validPoints = points.filter((p) => p && !isNaN(p.lat) && !isNaN(p.lng));
+    if (validPoints.length > 0) {
+      const bounds: LatLngBoundsExpression = validPoints.map((p) => [p.lat, p.lng]);
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 15 });
+    }
+    return () => clearTimeout(timer);
   }, [map, points]);
 
   return null;

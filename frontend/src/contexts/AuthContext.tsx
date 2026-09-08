@@ -48,7 +48,7 @@ interface AuthState {
 }
 
 interface AuthContextType extends AuthState {
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, role?: UserRole) => Promise<void>;
   register: (payload: RegisterPayload, autoLogin?: boolean) => Promise<any>;
   verifyAndLogin: (
     idToken: string,
@@ -116,7 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return unsubscribe;
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string, role?: UserRole) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
     try {
       const response = await apiFetch<TokenResponse>("/auth/login", {
@@ -124,6 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: {
           email: email.trim().toLowerCase(),
           password,
+          role: role || undefined,
         },
       });
 

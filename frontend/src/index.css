@@ -106,3 +106,20 @@ input, select, textarea {
   }
 }
 
+/* Ensure Leaflet Maps render properly with clear tiles and controls */
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  font-family: inherit !important;
+  z-index: 1 !important;
+}
+
+.leaflet-tile {
+  visibility: inherit !important;
+}
+
+.custom-map-marker, .custom-map-marker-volunteer {
+  background: transparent !important;
+  border: none !important;
+}
+

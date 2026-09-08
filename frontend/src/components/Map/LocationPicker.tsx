@@ -39,7 +39,13 @@ function ClickHandler({
 function RecenterMap({ lat, lng }: { lat: number; lng: number }) {
   const map = useMap();
   useEffect(() => {
-    map.setView([lat, lng], map.getZoom());
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+    if (lat && lng && !isNaN(lat) && !isNaN(lng)) {
+      map.setView([lat, lng], map.getZoom());
+    }
+    return () => clearTimeout(timer);
   }, [lat, lng, map]);
   return null;
 }

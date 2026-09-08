@@ -30,6 +30,7 @@ export default function LandingPage() {
   } | null>(null);
 
   // Forgot password state
+  const [recoveryEmail, setRecoveryEmail] = useState("");
   const [resetCode, setResetCode] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [resetStep, setResetStep] = useState<1 | 2>(1);
@@ -88,7 +89,7 @@ export default function LandingPage() {
         : "Volunteer Courier";
 
     try {
-      await login(cleanEmail, password);
+      await login(cleanEmail, password, selectedRole);
       // Only close modal and navigate on SUCCESS
       setIsAuthOpen(false);
       navigate("/dashboard", { replace: true });
@@ -97,12 +98,14 @@ export default function LandingPage() {
       const lower = msg.toLowerCase();
 
       // DO NOT return to home page or close modal! Keep modal open and show clear message
-      if (lower.includes("password") || lower.includes("unauthorized") || lower.includes("401")) {
+      if (lower.includes("role mismatch") || lower.includes("registered as") || lower.includes("403")) {
+        setLocalError(`🚫 ${msg}`);
+      } else if (lower.includes("incorrect password") || lower.includes("wrong password") || lower.includes("unauthorized") || lower.includes("401")) {
         setLocalError(`⚠️ Wrong password entered for ${roleName}. Please check your password and try again.`);
       } else if (lower.includes("no account") || lower.includes("not found") || lower.includes("404")) {
-        setLocalError(`⚠️ Wrong email ID. No ${roleName} account found with "${cleanEmail}". Please check your email ID or sign up.`);
+        setLocalError(`⚠️ Wrong email ID. No account found with "${cleanEmail}". Please check your email ID or sign up.`);
       } else {
-        setLocalError(`⚠️ Wrong email ID or password given for ${roleName}. Please check and try again.`);
+        setLocalError(`⚠️ ${msg}`);
       }
     }
   };
@@ -209,6 +212,7 @@ export default function LandingPage() {
           body: { email: cleanEmail },
         }
       );
+      setRecoveryEmail(cleanEmail);
       setResetStep(2);
       if (res.reset_code) {
         setResetCode(res.reset_code);
@@ -234,7 +238,15 @@ export default function LandingPage() {
     setLocalSuccess(null);
     clearError();
 
-    const cleanEmail = email.trim().toLowerCase();
+    const targetEmail = recoveryEmail.trim().toLowerCase();
+    if (!targetEmail) {
+      const err = "⚠️ No active recovery request found. Please request a new verification code.";
+      setLocalError(err);
+      setResetStep(1);
+      try { window.alert(err); } catch {}
+      return;
+    }
+
     if (!resetCode.trim()) {
       const err = "⚠️ Please enter the 6-digit verification code.";
       setLocalError(err);
@@ -253,7 +265,7 @@ export default function LandingPage() {
       await apiFetch<{ status: string; message: string }>("/auth/reset-password", {
         method: "POST",
         body: {
-          email: cleanEmail,
+          email: targetEmail,
           code: resetCode.trim(),
           new_password: newPassword,
         },
@@ -262,8 +274,10 @@ export default function LandingPage() {
       const successMsg = "🎉 Password reset successfully! Please sign in with your new password.";
       setLocalSuccess(successMsg);
       setAuthMode("signin");
+      setEmail(targetEmail);
       setPassword("");
       setResetStep(1);
+      setRecoveryEmail("");
       setResetCode("");
       setNewPassword("");
       try {

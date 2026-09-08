@@ -123,3 +123,115 @@ input, select, textarea {
   border: none !important;
 }
 
+/* ==========================================================================
+   AUTO-ADAPTIVE RESPONSIVE DESIGN (Phones, Foldables, Tablets, Laptops & Desktops)
+   ========================================================================== */
+
+/* 1. Universal fluid media & form elements */
+img, video, canvas, svg {
+  max-width: 100%;
+  height: auto;
+}
+
+input, select, textarea, button {
+  max-width: 100%;
+}
+
+/* 2. Touch friendly targets & comfortable mobile padding */
+@media (max-width: 768px) {
+  /* Prevent iOS auto-zoom on input focus */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+
+  /* Compact header on mobile screens */
+  header {
+    padding-left: 0.75rem !important;
+    padding-right: 0.75rem !important;
+  }
+
+  /* Fluid modal popups for mobile screens */
+  .modal-card-responsive,
+  div[style*="maxWidth: \"440px\""],
+  div[style*="maxWidth: \"460px\""],
+  div[style*="maxWidth: \"500px\""] {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    padding: 1.25rem 1rem !important;
+    margin: auto !important;
+    max-height: 92vh !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Wrap dashboard header user info neatly */
+  header > div {
+    padding: 0.5rem 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+
+  /* Mobile friendly tabs and buttons */
+  button {
+    min-height: 38px;
+  }
+
+  /* Make form row flex items 100% width on mobile */
+  div[style*="minWidth: \"200px\""],
+  div[style*="minWidth: 200px"] {
+    min-width: 100% !important;
+  }
+
+  /* Adapt hero action groups and demo pills */
+  div[style*="heroActionGroup"] button,
+  div[style*="demoPreviewBar"] {
+    width: 100% !important;
+  }
+
+  /* Reduce large hero titles on small smartphone displays */
+  h1 {
+    font-size: clamp(1.65rem, 6vw, 2.5rem) !important;
+    line-height: 1.2 !important;
+  }
+
+  h2 {
+    font-size: clamp(1.35rem, 5vw, 1.85rem) !important;
+  }
+
+  /* Ensure map heights adapt nicely on small smartphone screens */
+  div[style*="height: \"400px\""],
+  div[style*="height: \"380px\""] {
+    height: 280px !important;
+  }
+}
+
+/* 3. Small smartphone screens (e.g. iPhone SE, Galaxy A-series <= 480px) */
+@media (max-width: 480px) {
+  body {
+    font-size: 14px;
+  }
+
+  /* Allow flex wrapping on mobile navbar controls */
+  header > div > div {
+    flex-wrap: wrap !important;
+  }
+
+  /* Make full width buttons in card actions */
+  div[style*="cardActions"] button,
+  div[style*="cardActions"] {
+    width: 100% !important;
+    justify-content: stretch !important;
+  }
+
+  /* Floating auto-location banner compact font */
+  div[style*="Auto-detected Location"] {
+    font-size: 0.72rem !important;
+  }
+}
+
+/* 4. Desktop & Laptop Wide Display Enhancements (>= 1200px) */
+@media (min-width: 1200px) {
+  .hero-container-desktop {
+    grid-template-columns: 1.15fr 0.85fr !important;
+  }
+}
+

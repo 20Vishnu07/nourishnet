@@ -98,11 +98,9 @@ export default function LoginPage() {
       const msg = err instanceof Error ? err.message : "Registration failed";
       if (
         msg.toLowerCase().includes("already registered") ||
-        msg.toLowerCase().includes("already exists") ||
-        msg.includes("400")
+        msg.toLowerCase().includes("already exists")
       ) {
-        setMode("signin");
-        setLocalError(t("auth.alreadyRegisteredJump"));
+        setLocalError("⚠️ This email is already registered. Please switch to Sign In or use another email.");
       } else {
         setLocalError(msg);
       }

@@ -53,20 +53,24 @@ def register_user(request: UserRegisterRequest, db: Session = Depends(get_db)):
             detail="Email is already registered. Please sign in instead.",
         )
 
-    # Provide safe unique fallback phone in case old DB schema has NOT NULL/UNIQUE on phone
+    # Provide safe unique phone handling in case SQLite schema has legacy UNIQUE/NOT NULL constraint on phone
     import uuid
-    phone_val = (
-        request.phone.strip()
-        if request.phone and request.phone.strip()
-        else f"+91{uuid.uuid4().int % 10**10:010d}"
-    )
+    raw_phone = request.phone.strip() if request.phone and request.phone.strip() else None
+    if raw_phone:
+        existing_phone = db.query(User).filter(User.phone == raw_phone).first()
+        if existing_phone and existing_phone.email != clean_email:
+            phone_val = f"{raw_phone[:14]}_{uuid.uuid4().hex[:4]}"[:20]
+        else:
+            phone_val = raw_phone[:20]
+    else:
+        phone_val = f"+91{uuid.uuid4().int % 10**10:010d}"[:20]
 
     new_user = User(
         email=clean_email,
         hashed_password=hash_password(request.password),
         name=request.name.strip(),
         role=request.role,
-        phone=phone_val[:20],
+        phone=phone_val,
         org_name=request.org_name.strip() if request.org_name else None,
         address=request.address.strip() if request.address else None,
         language_pref=request.language_pref,
@@ -79,15 +83,23 @@ def register_user(request: UserRegisterRequest, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         err_msg = str(e)
-        if "UNIQUE" in err_msg.upper() or "duplicate" in err_msg.lower():
+        if "email" in err_msg.lower():
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Email or phone is already registered. Please sign in.",
+                detail="Email is already registered. Please sign in instead.",
             )
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Registration error: {err_msg}",
-        )
+        # If still phone or other collision, retry with guaranteed unique phone
+        try:
+            new_user.phone = f"+91{uuid.uuid4().int % 10**10:010d}"[:20]
+            db.add(new_user)
+            db.commit()
+            db.refresh(new_user)
+        except Exception as retry_err:
+            db.rollback()
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Registration failed: {str(retry_err)}",
+            )
 
     access_token = create_access_token(
         data={"user_id": new_user.id, "role": new_user.role.value}

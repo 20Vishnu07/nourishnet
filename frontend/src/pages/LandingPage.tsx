@@ -630,7 +630,7 @@ export default function LandingPage() {
           <h2 style={landingStyles.ctaTitle}>{t("landing.ctaTitle")}</h2>
           <p style={landingStyles.ctaSubtitle}>{t("landing.ctaSubtitle")}</p>
           <button
-            onClick={() => openAuthWithRole("donor")}
+            onClick={() => openAuthWithRole("donor", "signup")}
             style={landingStyles.ctaBtn}
           >
             {t("landing.ctaAction")} ✨
@@ -650,12 +650,20 @@ export default function LandingPage() {
               <div style={{ fontSize: "0.8rem", color: colors.textMuted }}>
                 {t("landing.footerTagline")}
               </div>
+              <div style={{ fontSize: "0.75rem", color: colors.primary, fontWeight: 600, marginTop: "2px" }}>
+                ✓ 100% Free Public Initiative • Zero Fees • Open Community
+              </div>
             </div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            <LanguageSwitcher />
-            <span style={{ fontSize: "0.8rem", color: colors.textMuted }}>
-              © {new Date().getFullYear()} NourishNet. All rights reserved.
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <a href="mailto:contact@nourishnet.me" style={{ fontSize: "0.8rem", color: colors.textMuted, textDecoration: "none", fontWeight: 600 }}>
+                📧 contact@nourishnet.me
+              </a>
+              <LanguageSwitcher />
+            </div>
+            <span style={{ fontSize: "0.75rem", color: colors.textMuted }}>
+              © {new Date().getFullYear()} NourishNet. Connecting Surplus Food with Those in Need.
             </span>
           </div>
         </div>

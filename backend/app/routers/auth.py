@@ -140,6 +140,89 @@ def login_user(request: UserLoginRequest, db: Session = Depends(get_db)):
     )
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    code: str
+    new_password: str
+
+
+# Temporary in-memory storage for reset verification codes: {email: {"code": "123456", "expires": timestamp}}
+RESET_CODES: dict[str, dict] = {}
+
+
+@router.post("/forgot-password")
+def forgot_password(request: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    """Initiate password reset: verify user exists and generate a 6-digit verification code."""
+    import random
+    import time
+
+    clean_email = request.email.lower().strip()
+    user = db.query(User).filter(User.email == clean_email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No account found with email ID '{clean_email}'. Please verify your email or sign up.",
+        )
+
+    code = f"{random.randint(100000, 999999)}"
+    RESET_CODES[clean_email] = {
+        "code": code,
+        "expires": time.time() + 900,  # 15 minutes validity
+    }
+
+    return {
+        "status": "success",
+        "message": f"Verification code generated for {clean_email}.",
+        "reset_code": code,
+        "email": clean_email,
+    }
+
+
+@router.post("/reset-password")
+def reset_password(request: ResetPasswordRequest, db: Session = Depends(get_db)):
+    """Reset user password using the verification code."""
+    import time
+
+    clean_email = request.email.lower().strip()
+    user = db.query(User).filter(User.email == clean_email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"No account found with email ID '{clean_email}'.",
+        )
+
+    if len(request.new_password) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="New password must be at least 6 characters long.",
+        )
+
+    saved = RESET_CODES.get(clean_email)
+    if not saved or saved.get("code") != request.code.strip() or time.time() > saved.get("expires", 0):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid or expired verification code. Please request a new code.",
+        )
+
+    # Update password
+    user.hashed_password = hash_password(request.new_password)
+    db.commit()
+    db.refresh(user)
+
+    # Remove used code
+    RESET_CODES.pop(clean_email, None)
+
+    return {
+        "status": "success",
+        "message": "Password has been successfully reset! Please sign in with your new password.",
+        "email": clean_email,
+    }
+
+
 @router.post("/verify", response_model=TokenResponse)
 
 def verify_token(request: TokenVerifyRequest, db: Session = Depends(get_db)):

@@ -4,8 +4,9 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth, type UserRole } from "../contexts/AuthContext";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { colors, shadows } from "../styles/theme";
+import { apiFetch } from "../config/api";
 
-type AuthMode = "signin" | "signup";
+type AuthMode = "signin" | "signup" | "forgot";
 
 export default function LoginPage() {
   const { t, i18n } = useTranslation();
@@ -31,6 +32,12 @@ export default function LoginPage() {
     email: string;
     role: UserRole;
   } | null>(null);
+
+  // Forgot password state
+  const [resetCode, setResetCode] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [resetStep, setResetStep] = useState<1 | 2>(1);
+  const [isResetSubmitting, setIsResetSubmitting] = useState(false);
 
   const displayError = localError || error;
 
@@ -128,6 +135,99 @@ export default function LoginPage() {
       try {
         window.alert(errMsg);
       } catch {}
+    }
+  };
+
+  // Forgot Password Step 1: Request verification code
+  const handleRequestResetCode = async (e: FormEvent) => {
+    e.preventDefault();
+    setLocalError(null);
+    setLocalSuccess(null);
+    clearError();
+
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      const err = "⚠️ Please enter a valid registered email address.";
+      setLocalError(err);
+      try { window.alert(err); } catch {}
+      return;
+    }
+
+    setIsResetSubmitting(true);
+    try {
+      const res = await apiFetch<{ status: string; message: string; reset_code: string; email: string }>(
+        "/auth/forgot-password",
+        {
+          method: "POST",
+          body: { email: cleanEmail },
+        }
+      );
+      setResetStep(2);
+      if (res.reset_code) {
+        setResetCode(res.reset_code);
+      }
+      const successMsg = `✅ Verification code generated for ${cleanEmail}!`;
+      setLocalSuccess(successMsg);
+      try {
+        window.alert(`✅ Password Reset Code: ${res.reset_code}\n\nPlease enter this 6-digit code and your new password to reset.`);
+      } catch {}
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Failed to generate reset code.";
+      setLocalError(msg);
+      try { window.alert(msg); } catch {}
+    } finally {
+      setIsResetSubmitting(false);
+    }
+  };
+
+  // Forgot Password Step 2: Confirm new password
+  const handleConfirmResetPassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setLocalError(null);
+    setLocalSuccess(null);
+    clearError();
+
+    const cleanEmail = email.trim().toLowerCase();
+    if (!resetCode.trim()) {
+      const err = "⚠️ Please enter the 6-digit verification code.";
+      setLocalError(err);
+      try { window.alert(err); } catch {}
+      return;
+    }
+    if (!newPassword || newPassword.length < 6) {
+      const err = "⚠️ New password must be at least 6 characters long.";
+      setLocalError(err);
+      try { window.alert(err); } catch {}
+      return;
+    }
+
+    setIsResetSubmitting(true);
+    try {
+      await apiFetch<{ status: string; message: string }>("/auth/reset-password", {
+        method: "POST",
+        body: {
+          email: cleanEmail,
+          code: resetCode.trim(),
+          new_password: newPassword,
+        },
+      });
+
+      const successMsg = "🎉 Password reset successfully! Please sign in with your new password.";
+      setLocalSuccess(successMsg);
+      setMode("signin");
+      setPassword("");
+      setResetStep(1);
+      setResetCode("");
+      setNewPassword("");
+      try {
+        window.alert(successMsg);
+      } catch {}
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Password reset failed.";
+      setLocalError(msg);
+      try { window.alert(msg); } catch {}
+    } finally {
+      setIsResetSubmitting(false);
     }
   };
 
@@ -290,7 +390,29 @@ export default function LoginPage() {
               required
             />
 
-            <label style={styles.label}>{t("auth.passwordLabel")}</label>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+              <label style={{ ...styles.label, marginBottom: 0 }}>{t("auth.passwordLabel")}</label>
+              <button
+                type="button"
+                onClick={() => {
+                  setMode("forgot");
+                  setLocalError(null);
+                  setLocalSuccess(null);
+                  setResetStep(1);
+                }}
+                style={{
+                  background: "none",
+                  border: "none",
+                  color: colors.primary,
+                  fontSize: "0.8rem",
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  padding: 0,
+                }}
+              >
+                Forgot Password?
+              </button>
+            </div>
             <input
               type="password"
               placeholder={t("auth.passwordPlaceholder")}
@@ -313,6 +435,137 @@ export default function LoginPage() {
               Need an account? Sign up as {roleTitles[role].title}
             </button>
           </form>
+        )}
+
+        {/* FORGOT PASSWORD FORM */}
+        {mode === "forgot" && (
+          <div style={styles.form}>
+            <div style={{
+              background: "#fef3c7",
+              border: "1px solid #fde68a",
+              borderRadius: "8px",
+              padding: "8px 12px",
+              fontSize: "0.82rem",
+              color: "#92400e",
+              fontWeight: 600,
+              display: "flex",
+              alignItems: "center",
+              gap: "6px",
+            }}>
+              <span>🔑</span>
+              <span>Reset Password for: <strong>{roleTitles[role].title}</strong></span>
+            </div>
+
+            {resetStep === 1 ? (
+              <form onSubmit={handleRequestResetCode} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <p style={{ fontSize: "0.82rem", color: colors.textMuted, margin: 0, lineHeight: 1.4 }}>
+                  Enter your registered email address to receive a secure 6-digit verification code.
+                </p>
+
+                <label style={styles.label}>{t("auth.emailLabel")}</label>
+                <input
+                  type="email"
+                  placeholder={t("auth.emailPlaceholder")}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  style={styles.input}
+                  disabled={isResetSubmitting}
+                  required
+                />
+
+                <button
+                  type="submit"
+                  style={styles.button}
+                  disabled={isResetSubmitting}
+                >
+                  {isResetSubmitting ? "Generating Code..." : "Get Reset Code →"}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleConfirmResetPassword} style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div style={{
+                  backgroundColor: "#f0fdf4",
+                  border: "1px solid #bbf7d0",
+                  borderRadius: "8px",
+                  padding: "8px",
+                  fontSize: "0.82rem",
+                  color: "#166534",
+                  textAlign: "center",
+                  fontWeight: 600,
+                }}>
+                  Verification code generated for <strong>{email}</strong>!
+                </div>
+
+                <label style={styles.label}>6-Digit Verification Code *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 123456"
+                  value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value)}
+                  style={{
+                    ...styles.input,
+                    fontSize: "1.1rem",
+                    letterSpacing: "4px",
+                    textAlign: "center",
+                    fontWeight: 700,
+                  }}
+                  maxLength={6}
+                  disabled={isResetSubmitting}
+                  required
+                />
+
+                <label style={styles.label}>New Password * (Min 6 characters)</label>
+                <input
+                  type="password"
+                  placeholder="Enter new strong password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  style={styles.input}
+                  disabled={isResetSubmitting}
+                  required
+                />
+
+                <button
+                  type="submit"
+                  style={{
+                    ...styles.button,
+                    backgroundColor: "#16a34a",
+                  }}
+                  disabled={isResetSubmitting}
+                >
+                  {isResetSubmitting ? "Updating Password..." : "Set New Password & Sign In →"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setResetStep(1)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: colors.textMuted,
+                    fontSize: "0.8rem",
+                    cursor: "pointer",
+                    marginTop: "2px",
+                  }}
+                >
+                  Resend code or change email
+                </button>
+              </form>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signin");
+                setLocalError(null);
+                setLocalSuccess(null);
+                setResetStep(1);
+              }}
+              style={styles.linkBtn}
+            >
+              ← Back to Sign In
+            </button>
+          </div>
         )}
 
         {/* SIGN UP FORM */}

@@ -62,27 +62,35 @@ export default function LandingPage() {
     setLocalSuccess(null);
     clearError();
 
-    if (!email.trim() || !password) {
-      setLocalError("Please enter both email and password.");
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !password) {
+      setLocalError("⚠️ Please enter both your email ID and password.");
       return;
     }
 
+    const roleName =
+      selectedRole === "donor"
+        ? "Food Donor"
+        : selectedRole === "ngo"
+        ? "NGO / Shelter"
+        : "Volunteer Courier";
+
     try {
-      await login(email, password);
+      await login(cleanEmail, password);
+      // Only close modal and navigate on SUCCESS
       setIsAuthOpen(false);
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign in failed";
-      // If user does not exist (404), jump directly to Sign Up tab with their email pre-filled!
-      if (
-        msg.toLowerCase().includes("no account") ||
-        msg.toLowerCase().includes("not found") ||
-        msg.includes("404")
-      ) {
-        setAuthMode("signup");
-        setLocalError(t("auth.noAccountFoundJump"));
+      const lower = msg.toLowerCase();
+
+      // DO NOT return to home page or close modal! Keep modal open and show clear message
+      if (lower.includes("password") || lower.includes("unauthorized") || lower.includes("401")) {
+        setLocalError(`⚠️ Wrong password entered for ${roleName}. Please check your password and try again.`);
+      } else if (lower.includes("no account") || lower.includes("not found") || lower.includes("404")) {
+        setLocalError(`⚠️ Wrong email ID. No ${roleName} account found with "${cleanEmail}". Please check your email ID or sign up.`);
       } else {
-        setLocalError(msg);
+        setLocalError(`⚠️ Wrong email ID or password given for ${roleName}. Please check and try again.`);
       }
     }
   };

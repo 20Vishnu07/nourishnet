@@ -35,25 +35,28 @@ export default function LoginPage() {
     setLocalSuccess(null);
     clearError();
 
-    if (!email.trim() || !password) {
-      setLocalError("Please enter both email and password.");
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !password) {
+      setLocalError("⚠️ Please enter both your email ID and password.");
       return;
     }
 
+    const currentRoleTitle = roleTitles[role]?.title || "Account";
+
     try {
-      await login(email, password);
+      await login(cleanEmail, password);
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Sign in failed";
-      if (
-        msg.toLowerCase().includes("no account") ||
-        msg.toLowerCase().includes("not found") ||
-        msg.includes("404")
-      ) {
-        setMode("signup");
-        setLocalError(t("auth.noAccountFoundJump"));
+      const lower = msg.toLowerCase();
+
+      // DO NOT return to home page or change tab! Keep user on sign-in and show clear message
+      if (lower.includes("password") || lower.includes("unauthorized") || lower.includes("401")) {
+        setLocalError(`⚠️ Wrong password entered for ${currentRoleTitle}. Please check your password and try again.`);
+      } else if (lower.includes("no account") || lower.includes("not found") || lower.includes("404")) {
+        setLocalError(`⚠️ Wrong email ID. No ${currentRoleTitle} account found with "${cleanEmail}". Please check your email ID or sign up.`);
       } else {
-        setLocalError(msg);
+        setLocalError(`⚠️ Wrong email ID or password given for ${currentRoleTitle}. Please check and try again.`);
       }
     }
   };

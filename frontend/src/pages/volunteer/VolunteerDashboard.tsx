@@ -30,6 +30,7 @@ interface Claim {
   volunteer_lat?: number | null;
   volunteer_lng?: number | null;
   volunteer_updated_at?: string | null;
+  delivery_photo?: string | null;
   status: string;
   claimed_at: string;
   donation?: Donation | null;
@@ -67,6 +68,7 @@ export default function VolunteerDashboard() {
   const [success, setSuccess] = useState<string | null>(null);
   const [liveNotice, setLiveNotice] = useState<string | null>(null);
   const [isSharingLocation, setIsSharingLocation] = useState(true);
+  const [deliveryPhotoMap, setDeliveryPhotoMap] = useState<Record<number, string>>({});
   const [simStep, setSimStep] = useState(0);
 
   const locationWatchIdRef = useRef<number | null>(null);
@@ -256,16 +258,57 @@ export default function VolunteerDashboard() {
     }
   };
 
-  const updateStatus = async (claimId: number, newStatus: string) => {
+  const handleVolunteerPhotoSelect = (claimId: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_SIZE = 800;
+        let width = img.width;
+        let height = img.height;
+        if (width > height) {
+          if (width > MAX_SIZE) {
+            height = Math.round((height * MAX_SIZE) / width);
+            width = MAX_SIZE;
+          }
+        } else {
+          if (height > MAX_SIZE) {
+            width = Math.round((width * MAX_SIZE) / height);
+            height = MAX_SIZE;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL("image/jpeg", 0.78);
+          setDeliveryPhotoMap((prev) => ({ ...prev, [claimId]: compressed }));
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const updateStatus = async (claimId: number, newStatus: string, deliveryPhoto?: string | null) => {
     setError(null);
     setSuccess(null);
     try {
       await apiFetch(`/claims/${claimId}/status`, {
         method: "PATCH",
         token,
-        body: { status: newStatus },
+        body: { status: newStatus, delivery_photo: deliveryPhoto || undefined },
       });
       setSuccess(t("volunteer.claimUpdated", { status: newStatus }));
+      setDeliveryPhotoMap((prev) => {
+        const copy = { ...prev };
+        delete copy[claimId];
+        return copy;
+      });
       await refreshAll();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update status");
@@ -750,19 +793,103 @@ export default function VolunteerDashboard() {
                     </div>
                   )}
 
-                  <div style={styles.cardActions}>
+                    {/* OPTIONAL DELIVERY / PICKUP PHOTO UPLOAD */}
                     {nextAction && (
-                      <button
-                        onClick={() => updateStatus(claim.id, nextAction.next)}
-                        style={styles.actionBtn}
-                      >
-                        {nextAction.emoji} {nextAction.label}
-                      </button>
+                      <div style={{
+                        margin: "0.75rem 0",
+                        padding: "0.6rem 0.85rem",
+                        background: "#f8fafc",
+                        border: "1px dashed #cbd5e1",
+                        borderRadius: "8px",
+                      }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                          <span style={{ fontSize: "0.8rem", fontWeight: 700, color: "#334155" }}>
+                            📸 {nextAction.next === "picked_up" ? "Pickup Package Photo (Optional)" : "Delivery Confirmation Photo (Optional)"}
+                          </span>
+                          {deliveryPhotoMap[claim.id] && (
+                            <button
+                              type="button"
+                              onClick={() => setDeliveryPhotoMap((prev) => {
+                                const copy = { ...prev };
+                                delete copy[claim.id];
+                                return copy;
+                              })}
+                              style={{ background: "none", border: "none", color: "#ef4444", fontSize: "0.75rem", cursor: "pointer", fontWeight: 600 }}
+                            >
+                              ✕ Remove Photo
+                            </button>
+                          )}
+                        </div>
+
+                        {deliveryPhotoMap[claim.id] ? (
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <img
+                              src={deliveryPhotoMap[claim.id]}
+                              alt="Attached photo"
+                              style={{ width: "65px", height: "48px", objectFit: "cover", borderRadius: "6px", border: "1.5px solid #10b981" }}
+                            />
+                            <span style={{ fontSize: "0.75rem", color: "#059669", fontWeight: 600 }}>
+                              ✓ Photo attached — will be shared with NGO upon confirming below!
+                            </span>
+                          </div>
+                        ) : (
+                          <label style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            cursor: "pointer",
+                            fontSize: "0.78rem",
+                            color: "#0284c7",
+                            fontWeight: 600,
+                            padding: "4px 8px",
+                            background: "#eff6ff",
+                            borderRadius: "6px",
+                            border: "1px solid #bfdbfe",
+                          }}>
+                            <span>📷 Take / Upload Photo</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              onChange={(e) => handleVolunteerPhotoSelect(claim.id, e)}
+                              style={{ display: "none" }}
+                            />
+                          </label>
+                        )}
+                      </div>
                     )}
-                    {claim.status === "delivered" && (
-                      <span style={styles.done}>✅ {t("volunteer.completed")}</span>
+
+                    {claim.delivery_photo && (
+                      <div style={{ marginTop: "0.5rem", padding: "0.5rem", background: "#f0fdf4", borderRadius: "8px", border: "1px solid #bbf7d0", display: "flex", alignItems: "center", gap: "10px" }}>
+                        <img
+                          src={claim.delivery_photo}
+                          alt="Delivery confirmation"
+                          style={{ width: "70px", height: "52px", objectFit: "cover", borderRadius: "6px", border: "1px solid #86efac" }}
+                        />
+                        <div>
+                          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#166534" }}>
+                            📸 Delivery Confirmation Photo
+                          </div>
+                          <div style={{ fontSize: "0.74rem", color: "#15803d" }}>
+                            Saved and transmitted to NGO & Food Donor
+                          </div>
+                        </div>
+                      </div>
                     )}
-                  </div>
+
+                    <div style={styles.cardActions}>
+                      {nextAction && (
+                        <button
+                          onClick={() => updateStatus(claim.id, nextAction.next, deliveryPhotoMap[claim.id])}
+                          style={styles.actionBtn}
+                        >
+                          {nextAction.emoji} {nextAction.label}
+                        </button>
+                      )}
+                      {claim.status === "delivered" && (
+                        <span style={styles.done}>✅ {t("volunteer.completed")}</span>
+                      )}
+                    </div>
                 </div>
               );
             })}

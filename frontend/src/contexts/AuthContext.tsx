@@ -187,8 +187,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           error: null,
         }));
       } else {
+        localStorage.removeItem("nourishnet_token");
+        localStorage.removeItem("nourishnet_user");
         setState((prev) => ({
           ...prev,
+          token: null,
+          appUser: null,
+          isNewUser: false,
           isLoading: false,
           error: null,
         }));

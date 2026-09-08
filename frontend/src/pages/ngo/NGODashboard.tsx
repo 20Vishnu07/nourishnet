@@ -21,6 +21,7 @@ interface Claim {
   volunteer_lat?: number | null;
   volunteer_lng?: number | null;
   volunteer_updated_at?: string | null;
+  delivery_photo?: string | null;
   status: string;
   claimed_at: string;
   donation?: Donation | null;
@@ -631,8 +632,31 @@ export default function NGODashboard() {
                           }}
                         />
                         <span style={{ fontSize: "0.78rem", color: "#64748b" }}>
-                          📸 Food packaging condition
+                          📸 Donor's food packaging photo
                         </span>
+                      </div>
+                    )}
+                    {claim.delivery_photo && (
+                      <div style={{ marginTop: "0.4rem", display: "flex", alignItems: "center", gap: "10px", background: "#f0fdf4", padding: "6px", borderRadius: "8px", border: "1px solid #bbf7d0" }}>
+                        <img
+                          src={claim.delivery_photo}
+                          alt="Volunteer delivery proof"
+                          style={{
+                            width: "80px",
+                            height: "60px",
+                            objectFit: "cover",
+                            borderRadius: "6px",
+                            border: "1px solid #86efac",
+                          }}
+                        />
+                        <div>
+                          <div style={{ fontSize: "0.8rem", fontWeight: 700, color: "#166534" }}>
+                            📸 Volunteer Delivery Confirmation Photo
+                          </div>
+                          <div style={{ fontSize: "0.74rem", color: "#15803d" }}>
+                            Captured by courier during pickup / delivery
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>

@@ -265,6 +265,9 @@ async def update_claim_status(
     if update.needs_volunteer is not None:
         claim.needs_volunteer = update.needs_volunteer
 
+    if update.delivery_photo is not None:
+        claim.delivery_photo = update.delivery_photo
+
     # Sync donation status with claim status
     donation = db.query(Donation).filter(Donation.id == claim.donation_id).first()
     if donation and update.status is not None:
@@ -288,6 +291,7 @@ async def update_claim_status(
             "volunteer_id": claim.volunteer_id,
             "needs_volunteer": claim.needs_volunteer,
             "status": claim.status.value,
+            "delivery_photo": claim.delivery_photo,
         },
         donor_id=donation.donor_id if donation else 0,
         ngo_id=claim.ngo_id,

@@ -26,10 +26,6 @@ export default function LandingPage() {
   const displayError = localError || error;
 
   const openSignIn = (role?: UserRole | React.MouseEvent) => {
-    if (appUser) {
-      navigate("/dashboard");
-      return;
-    }
     if (typeof role === "string") {
       setSelectedRole(role);
     }
@@ -40,11 +36,18 @@ export default function LandingPage() {
     setIsAuthOpen(true);
   };
 
-  const openAuthWithRole = (role: UserRole, mode: "signin" | "signup" = "signin") => {
-    if (appUser) {
-      navigate("/dashboard");
-      return;
+  const openSignUp = (role?: UserRole | React.MouseEvent) => {
+    if (typeof role === "string") {
+      setSelectedRole(role);
     }
+    setAuthMode("signup");
+    setLocalError(null);
+    setLocalSuccess(null);
+    clearError();
+    setIsAuthOpen(true);
+  };
+
+  const openAuthWithRole = (role: UserRole, mode: "signin" | "signup" = "signin") => {
     setSelectedRole(role);
     setAuthMode(mode);
     setLocalError(null);
@@ -160,7 +163,7 @@ export default function LandingPage() {
       {/* 1. TOP NAVBAR */}
       <header style={landingStyles.navbar}>
         <div style={landingStyles.navContent}>
-          <div style={landingStyles.brandWrap}>
+          <div style={landingStyles.brandWrap} onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
             <div style={landingStyles.brandLogo}>🌱</div>
             <div>
               <span style={landingStyles.brandName}>{t("common.appName")}</span>
@@ -168,7 +171,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <nav style={landingStyles.navLinks}>
+          <nav style={landingStyles.navLinks} className="landing-nav-links">
             <a href="#how-it-works" style={landingStyles.navLink}>
               {t("landing.howItWorksTitle")}
             </a>
@@ -183,7 +186,7 @@ export default function LandingPage() {
           <div style={landingStyles.navRight}>
             <LanguageSwitcher />
             {appUser ? (
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "nowrap" }}>
                 <button
                   onClick={() => navigate("/dashboard")}
                   style={{
@@ -193,7 +196,19 @@ export default function LandingPage() {
                     border: "none",
                   }}
                 >
-                  🚀 {t("common.appName")} Dashboard
+                  🚀 Dashboard
+                </button>
+                <button
+                  onClick={() => openSignIn()}
+                  style={{
+                    ...landingStyles.navSignInBtn,
+                    backgroundColor: "transparent",
+                    color: colors.primary,
+                    border: `1.5px solid ${colors.primary}`,
+                  }}
+                  title="Switch account or sign in as another role"
+                >
+                  {t("auth.signIn")}
                 </button>
                 <button
                   onClick={logout}
@@ -208,12 +223,30 @@ export default function LandingPage() {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => openSignIn()}
-                style={landingStyles.navSignInBtn}
-              >
-                {t("landing.signInBtn")}
-              </button>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "nowrap" }}>
+                <button
+                  onClick={() => openSignIn()}
+                  style={{
+                    ...landingStyles.navSignInBtn,
+                    backgroundColor: "#ffffff",
+                    color: colors.primary,
+                    border: `1.5px solid ${colors.primary}`,
+                  }}
+                >
+                  {t("auth.signIn")}
+                </button>
+                <button
+                  onClick={() => openSignUp()}
+                  style={{
+                    ...landingStyles.navSignInBtn,
+                    backgroundColor: colors.primary,
+                    color: "#ffffff",
+                    border: `1.5px solid ${colors.primary}`,
+                  }}
+                >
+                  {t("auth.signUp")}
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -240,19 +273,19 @@ export default function LandingPage() {
             {/* Role Action CTAs */}
             <div style={landingStyles.heroActionGroup}>
               <button
-                onClick={() => openAuthWithRole("donor")}
+                onClick={() => openAuthWithRole("donor", "signup")}
                 style={landingStyles.heroBtnDonor}
               >
                 🍲 {t("landing.donateFoodBtn")}
               </button>
               <button
-                onClick={() => openAuthWithRole("ngo")}
+                onClick={() => openAuthWithRole("ngo", "signup")}
                 style={landingStyles.heroBtnNgo}
               >
                 🏢 {t("landing.claimFoodBtn")}
               </button>
               <button
-                onClick={() => openAuthWithRole("volunteer")}
+                onClick={() => openAuthWithRole("volunteer", "signup")}
                 style={landingStyles.heroBtnVolunteer}
               >
                 🚗 {t("landing.volunteerBtn")}
@@ -374,7 +407,7 @@ export default function LandingPage() {
                 <li>✓ Map-based Geolocation Pinning</li>
               </ul>
               <button
-                onClick={() => openAuthWithRole("donor")}
+                onClick={() => openAuthWithRole("donor", "signup")}
                 style={landingStyles.roleActionBtnDonor}
               >
                 {t("landing.donorCardAction")} →
@@ -421,7 +454,7 @@ export default function LandingPage() {
                 <li>✓ Automated Volunteer Route Matching</li>
               </ul>
               <button
-                onClick={() => openAuthWithRole("ngo")}
+                onClick={() => openAuthWithRole("ngo", "signup")}
                 style={landingStyles.roleActionBtnNgo}
               >
                 {t("landing.ngoCardAction")} →
@@ -468,7 +501,7 @@ export default function LandingPage() {
                 <li>✓ Zero Food Waste Community Hero</li>
               </ul>
               <button
-                onClick={() => openAuthWithRole("volunteer")}
+                onClick={() => openAuthWithRole("volunteer", "signup")}
                 style={landingStyles.roleActionBtnVolunteer}
               >
                 {t("landing.volunteerCardAction")} →
@@ -1032,11 +1065,16 @@ const landingStyles: Record<string, React.CSSProperties> = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
+    gap: "1rem",
+    flexWrap: "nowrap",
   },
   brandWrap: {
     display: "flex",
     alignItems: "center",
     gap: "10px",
+    flexShrink: 0,
+    cursor: "pointer",
+    whiteSpace: "nowrap",
   },
   brandLogo: {
     fontSize: "1.8rem",
@@ -1061,6 +1099,7 @@ const landingStyles: Record<string, React.CSSProperties> = {
     display: "flex",
     gap: "1.5rem",
     alignItems: "center",
+    flexShrink: 1,
   },
   navLink: {
     color: colors.textMuted,
@@ -1068,11 +1107,13 @@ const landingStyles: Record<string, React.CSSProperties> = {
     fontSize: "0.9rem",
     fontWeight: 600,
     transition: "color 0.2s",
+    whiteSpace: "nowrap",
   },
   navRight: {
     display: "flex",
     alignItems: "center",
-    gap: "1rem",
+    gap: "0.75rem",
+    flexShrink: 0,
   },
   navSignInBtn: {
     backgroundColor: colors.primary,

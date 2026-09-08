@@ -8,7 +8,8 @@ Flow:
 4. Returns JWT access token for subsequent API calls
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+import httpx
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
@@ -236,3 +237,41 @@ def update_profile(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.get("/detect-location")
+async def detect_location(request: Request):
+    """Fallback IP geolocation proxy to bypass client-side adblockers."""
+    client_ip = request.headers.get("x-forwarded-for")
+    if client_ip:
+        client_ip = client_ip.split(",")[0].strip()
+    else:
+        client_ip = request.client.host if request.client else ""
+
+    url = (
+        f"https://ipwho.is/{client_ip}"
+        if client_ip and not client_ip.startswith(("127.", "192.168.", "10.", "172."))
+        else "https://ipwho.is/"
+    )
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.get(url)
+            if resp.status_code == 200:
+                data = resp.json()
+                if "latitude" in data and "longitude" in data:
+                    return {
+                        "lat": float(data["latitude"]),
+                        "lng": float(data["longitude"]),
+                        "city": data.get("city", "Current Area"),
+                        "source": "ip",
+                    }
+    except Exception:
+        pass
+
+    return {
+        "lat": 13.0827,
+        "lng": 80.2707,
+        "city": "Chennai",
+        "source": "default",
+    }
+

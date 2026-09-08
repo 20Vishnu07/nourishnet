@@ -605,6 +605,37 @@ def test_volunteer_coordination_and_live_tracking():
     assert loc_data["volunteer_lng"] == pytest.approx(80.2720, abs=0.001)
     assert loc_data["volunteer_updated_at"] is not None
 
+    # 8. Volunteer marks picked up and attaches delivery photo
+    mock_photo = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP"
+    pickup_resp = client.patch(
+        f"/claims/{claim['id']}/status",
+        json={"status": "picked_up", "delivery_photo": mock_photo},
+    )
+    assert pickup_resp.status_code == 200
+    pickup_data = pickup_resp.json()
+    assert pickup_data["status"] == "picked_up"
+    assert pickup_data["delivery_photo"] == mock_photo
+
+    # 9. Volunteer marks delivered
+    delivered_resp = client.patch(
+        f"/claims/{claim['id']}/status",
+        json={"status": "delivered"},
+    )
+    assert delivered_resp.status_code == 200
+    assert delivered_resp.json()["status"] == "delivered"
+
+
+def test_detect_location_endpoint():
+    res = client.get("/auth/detect-location")
+    assert res.status_code == 200
+    data = res.json()
+    assert "lat" in data
+    assert "lng" in data
+    assert isinstance(data["lat"], float)
+    assert isinstance(data["lng"], float)
+    assert "city" in data
+
+
 
 
 

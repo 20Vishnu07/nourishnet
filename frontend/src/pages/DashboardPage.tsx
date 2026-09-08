@@ -7,7 +7,7 @@ import VolunteerDashboard from "./volunteer/VolunteerDashboard";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { colors, shadows } from "../styles/theme";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { UserRole } from "../contexts/AuthContext";
 
 export default function DashboardPage() {
@@ -16,6 +16,13 @@ export default function DashboardPage() {
 
   const userRoleNormalized = (appUser?.role?.toLowerCase() as UserRole) || "donor";
   const [activeRole, setActiveRole] = useState<UserRole>(userRoleNormalized);
+
+  useEffect(() => {
+    if (appUser?.role) {
+      const normalized = (appUser.role.toLowerCase() as UserRole) || "donor";
+      setActiveRole(normalized);
+    }
+  }, [appUser?.role]);
 
   if (!appUser) return null;
 

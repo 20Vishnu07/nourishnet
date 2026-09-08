@@ -57,6 +57,9 @@ def run_db_migration():
                 if "volunteer_updated_at" not in c_columns:
                     logger.info("Migrating claims table: adding volunteer_updated_at column")
                     conn.execute(text("ALTER TABLE claims ADD COLUMN volunteer_updated_at TIMESTAMP"))
+                if "delivery_photo" not in c_columns:
+                    logger.info("Migrating claims table: adding delivery_photo column")
+                    conn.execute(text("ALTER TABLE claims ADD COLUMN delivery_photo TEXT"))
 
             if "donations" in inspector.get_table_names():
                 d_columns = [c["name"] for c in inspector.get_columns("donations")]

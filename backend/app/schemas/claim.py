@@ -18,6 +18,7 @@ class ClaimStatusUpdate(BaseModel):
     status: ClaimStatus | None = None
     volunteer_id: int | None = None
     needs_volunteer: bool | None = None
+    delivery_photo: str | None = None
 
 
 class VolunteerLocationUpdate(BaseModel):
@@ -34,6 +35,7 @@ class ClaimResponse(BaseModel):
     volunteer_lat: float | None = None
     volunteer_lng: float | None = None
     volunteer_updated_at: datetime | None = None
+    delivery_photo: str | None = None
     status: ClaimStatus
     claimed_at: datetime
     donation: DonationResponse | None = None

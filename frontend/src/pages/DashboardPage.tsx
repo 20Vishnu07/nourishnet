@@ -7,24 +7,15 @@ import VolunteerDashboard from "./volunteer/VolunteerDashboard";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { colors, shadows } from "../styles/theme";
 
-import { useState, useEffect } from "react";
 import type { UserRole } from "../contexts/AuthContext";
 
 export default function DashboardPage() {
   const { t } = useTranslation();
   const { appUser, logout } = useAuth();
 
-  const userRoleNormalized = (appUser?.role?.toLowerCase() as UserRole) || "donor";
-  const [activeRole, setActiveRole] = useState<UserRole>(userRoleNormalized);
-
-  useEffect(() => {
-    if (appUser?.role) {
-      const normalized = (appUser.role.toLowerCase() as UserRole) || "donor";
-      setActiveRole(normalized);
-    }
-  }, [appUser?.role]);
-
   if (!appUser) return null;
+
+  const activeRole: UserRole = (appUser.role?.toLowerCase() as UserRole) || "donor";
 
   const roleEmoji: Record<string, string> = {
     donor: "🍲",
@@ -63,39 +54,6 @@ export default function DashboardPage() {
             </div>
           </Link>
 
-          {/* Role Switching Tabs */}
-          <div style={{
-            display: "flex",
-            background: "#f1f5f9",
-            padding: "3px",
-            borderRadius: "10px",
-            gap: "3px",
-          }}>
-            {(["donor", "ngo", "volunteer"] as const).map((r) => (
-              <button
-                key={r}
-                onClick={() => setActiveRole(r)}
-                style={{
-                  border: "none",
-                  padding: "5px 12px",
-                  borderRadius: "7px",
-                  fontSize: "0.8rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  background: activeRole === r ? "#ffffff" : "transparent",
-                  color: activeRole === r ? colors.textDark : colors.textMuted,
-                  boxShadow: activeRole === r ? shadows.sm : "none",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "4px",
-                  transition: "all 0.2s",
-                }}
-              >
-                <span>{roleEmoji[r]}</span>
-                <span>{roleLabels[r]}</span>
-              </button>
-            ))}
-          </div>
 
           <div style={styles.userInfo}>
             <LanguageSwitcher />

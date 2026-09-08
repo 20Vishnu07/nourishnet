@@ -107,19 +107,27 @@ export default function LandingPage() {
     clearError();
 
     if (!name.trim()) {
-      setLocalError("Please enter your full name.");
+      const err = "⚠️ Please enter your full name.";
+      setLocalError(err);
+      try { window.alert(err); } catch {}
       return;
     }
     if (!email.trim() || !email.includes("@")) {
-      setLocalError("Please enter a valid email address.");
+      const err = "⚠️ Please enter a valid email address.";
+      setLocalError(err);
+      try { window.alert(err); } catch {}
       return;
     }
     if (!password || password.length < 6) {
-      setLocalError("Password must be at least 6 characters.");
+      const err = "⚠️ Password must be at least 6 characters.";
+      setLocalError(err);
+      try { window.alert(err); } catch {}
       return;
     }
     if (selectedRole === "ngo" && !orgName.trim()) {
-      setLocalError("Please enter your Organization / NGO name.");
+      const err = "⚠️ Please enter your Organization / NGO name.";
+      setLocalError(err);
+      try { window.alert(err); } catch {}
       return;
     }
 
@@ -143,22 +151,30 @@ export default function LandingPage() {
         ngo: "NGO / Shelter",
         volunteer: "Volunteer Courier",
       };
-      setLocalSuccess(
-        `🎉 Account created successfully for ${name.trim()} as ${roleDisplayNames[selectedRole]}! Please enter your password to sign in.`
-      );
-      // Trigger the celebratory popup modal
+      const successMsg = `🎉 Account created successfully for ${name.trim()} as ${roleDisplayNames[selectedRole]}! Please enter your password to sign in.`;
+      setLocalSuccess(successMsg);
+      
+      // Trigger celebratory popup modal
       setSignupSuccessData({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         role: selectedRole,
       });
+
+      // Also trigger unmistakable browser popup alert!
+      try {
+        window.alert(successMsg);
+      } catch {}
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed";
+      let errMsg = msg;
       if (msg.toLowerCase().includes("already registered") || msg.toLowerCase().includes("already exists")) {
-        setLocalError("⚠️ This email is already registered. Please sign in below with your password, or use a different email.");
-      } else {
-        setLocalError(msg);
+        errMsg = "⚠️ This email ID is already registered. Please sign in below with your password, or use a different email.";
       }
+      setLocalError(errMsg);
+      try {
+        window.alert(errMsg);
+      } catch {}
     }
   };
 

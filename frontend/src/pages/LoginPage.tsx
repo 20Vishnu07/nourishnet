@@ -72,22 +72,28 @@ export default function LoginPage() {
     clearError();
 
     if (!name.trim()) {
-      setLocalError("Please enter your name.");
+      const err = "⚠️ Please enter your name.";
+      setLocalError(err);
+      try { window.alert(err); } catch {}
       return;
     }
     if (!email.trim() || !email.includes("@")) {
-      setLocalError("Please enter a valid email address.");
+      const err = "⚠️ Please enter a valid email address.";
+      setLocalError(err);
+      try { window.alert(err); } catch {}
       return;
     }
     if (!password || password.length < 6) {
-      setLocalError("Password must be at least 6 characters.");
+      const err = "⚠️ Password must be at least 6 characters.";
+      setLocalError(err);
+      try { window.alert(err); } catch {}
       return;
     }
 
     try {
       await register({
         name: name.trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
         role,
         phone: phone.trim() || undefined,
@@ -99,24 +105,29 @@ export default function LoginPage() {
       // Return to sign in form, prefill email, clear password & show success
       setMode("signin");
       setPassword("");
-      setLocalSuccess(
-        `🎉 Account successfully created for ${roleTitles[role].title}! Please enter your password to sign in.`
-      );
+      const successMsg = `🎉 Account successfully created for ${roleTitles[role].title}! Please enter your password to sign in.`;
+      setLocalSuccess(successMsg);
       setSignupSuccessData({
         name: name.trim(),
         email: email.trim().toLowerCase(),
         role,
       });
+      try {
+        window.alert(successMsg);
+      } catch {}
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed";
+      let errMsg = msg;
       if (
         msg.toLowerCase().includes("already registered") ||
         msg.toLowerCase().includes("already exists")
       ) {
-        setLocalError("⚠️ This email is already registered. Please switch to Sign In or use another email.");
-      } else {
-        setLocalError(msg);
+        errMsg = "⚠️ This email ID is already registered. Please switch to Sign In or use another email.";
       }
+      setLocalError(errMsg);
+      try {
+        window.alert(errMsg);
+      } catch {}
     }
   };
 

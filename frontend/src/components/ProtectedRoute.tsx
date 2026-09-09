@@ -7,9 +7,9 @@ interface ProtectedRouteProps {
 }
 
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { appUser, isLoading } = useAuth();
+  const { appUser, isInitialLoading } = useAuth();
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div style={{
         minHeight: "100vh",

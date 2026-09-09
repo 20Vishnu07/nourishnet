@@ -6,9 +6,9 @@ import DashboardPage from "./pages/DashboardPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function AppRoutes() {
-  const { appUser, isLoading } = useAuth();
+  const { appUser, isInitialLoading } = useAuth();
 
-  if (isLoading) {
+  if (isInitialLoading) {
     return (
       <div style={{
         minHeight: "100vh",

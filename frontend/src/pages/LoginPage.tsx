@@ -50,7 +50,9 @@ export default function LoginPage() {
 
     const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail || !password) {
-      setLocalError("⚠️ Please enter both your email ID and password.");
+      const err = "⚠️ Please enter both your email ID and password.";
+      setLocalError(err);
+      try { window.alert(err); } catch {}
       return;
     }
 
@@ -63,16 +65,18 @@ export default function LoginPage() {
       const msg = err instanceof Error ? err.message : "Sign in failed";
       const lower = msg.toLowerCase();
 
+      let errMsg = `⚠️ ${msg}`;
       // DO NOT return to home page or change tab! Keep user on sign-in and show clear message
       if (lower.includes("role mismatch") || lower.includes("registered as") || lower.includes("403")) {
-        setLocalError(`🚫 ${msg}`);
+        errMsg = `🚫 ${msg}`;
       } else if (lower.includes("incorrect password") || lower.includes("wrong password") || lower.includes("unauthorized") || lower.includes("401")) {
-        setLocalError(`⚠️ Wrong password entered for ${currentRoleTitle}. Please check your password and try again.`);
+        errMsg = `⚠️ Wrong password entered for ${currentRoleTitle}. Please check your password and try again.`;
       } else if (lower.includes("no account") || lower.includes("not found") || lower.includes("404")) {
-        setLocalError(`⚠️ Wrong email ID. No account found with "${cleanEmail}". Please check your email ID or sign up.`);
-      } else {
-        setLocalError(`⚠️ ${msg}`);
+        errMsg = `⚠️ Wrong email ID. No account found with "${cleanEmail}". Please check your email ID or sign up.`;
       }
+
+      setLocalError(errMsg);
+      try { window.alert(errMsg); } catch {}
     }
   };
 
@@ -346,7 +350,7 @@ export default function LoginPage() {
 
         {displayError && (
           <div style={styles.error}>
-            <span>⚠️ {displayError}</span>
+            <span>{displayError.startsWith("⚠️") || displayError.startsWith("🚫") ? displayError : `⚠️ ${displayError}`}</span>
             <button onClick={() => { setLocalError(null); clearError(); }} style={styles.dismissBtn}>
               ✕
             </button>

@@ -43,6 +43,7 @@ interface AuthState {
   appUser: AppUser | null;
   token: string | null;
   isLoading: boolean;
+  isInitialLoading: boolean;
   isNewUser: boolean;
   error: string | null;
 }
@@ -76,7 +77,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     firebaseUser: null,
     appUser: null,
     token: null,
-    isLoading: true,
+    isLoading: false,
+    isInitialLoading: true,
     isNewUser: false,
     error: null,
   });
@@ -97,14 +99,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           token: savedToken,
           appUser: user,
           isLoading: false,
+          isInitialLoading: false,
         }));
       } catch {
         localStorage.removeItem("nourishnet_token");
         localStorage.removeItem("nourishnet_user");
-        setState((prev) => ({ ...prev, isLoading: false }));
+        setState((prev) => ({ ...prev, isLoading: false, isInitialLoading: false }));
       }
     } else {
-      setState((prev) => ({ ...prev, isLoading: false }));
+      setState((prev) => ({ ...prev, isLoading: false, isInitialLoading: false }));
     }
   }, []);
 
@@ -300,6 +303,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       appUser: null,
       token: null,
       isLoading: false,
+      isInitialLoading: false,
       isNewUser: false,
       error: null,
     });

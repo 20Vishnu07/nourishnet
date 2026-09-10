@@ -114,21 +114,10 @@ export default function LoginPage() {
         org_name: orgName.trim() || undefined,
         address: address.trim() || undefined,
         language_pref: i18n.language || "en",
-      }, false);
+      }, true);
 
-      // Return to sign in form, prefill email, clear password & show success
-      setMode("signin");
-      setPassword("");
-      const successMsg = `🎉 Account successfully created for ${roleTitles[role].title}! Please enter your password to sign in.`;
-      setLocalSuccess(successMsg);
-      setSignupSuccessData({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        role,
-      });
-      try {
-        window.alert(successMsg);
-      } catch {}
+      // Directly enter account on sign-up without needing to sign in again!
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed";
       let errMsg = msg;

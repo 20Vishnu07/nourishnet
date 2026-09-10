@@ -341,37 +341,55 @@ export default function VolunteerDashboard() {
     picked_up: { next: "delivered", label: t("volunteer.markDelivered"), emoji: "✅" },
   };
 
+  const completedClaims = claims.filter((c) => c.status === "delivered");
+  const activeMissions = claims.filter((c) => c.status === "claimed" || c.status === "picked_up");
+  const primaryActiveMission = activeMissions[0];
+  const totalKgTransported = completedClaims.reduce((acc, c) => {
+    const d = donationDetails[c.donation_id];
+    return acc + (d ? (d.unit === "kg" ? Number(d.quantity) : Number(d.quantity) * 0.5) : 10);
+  }, 0);
+  const rankTitle = completedClaims.length >= 10 ? "🥇 Gold Champion" : completedClaims.length >= 3 ? "🥈 Silver Guardian" : "🥉 Bronze Courier";
+
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-        <h2>🚗 {t("volunteer.title")}</h2>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      {/* Top Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1.45rem", fontWeight: 800, color: "#0f172a" }}>
+            🚗 {t("volunteer.title")}
+          </h2>
+          <p style={{ margin: "2px 0 0", fontSize: "0.85rem", color: "#64748b" }}>
+            Pick up surplus food from donors and transport it directly to local shelters in need.
+          </p>
+        </div>
         <span
           style={{
             fontSize: "0.75rem",
-            padding: "4px 10px",
-            borderRadius: "12px",
-            background: isConnected ? "#e8f5e9" : isFallbackMode ? "#fff8e1" : "#f5f5f5",
-            color: isConnected ? "#2e7d32" : isFallbackMode ? "#f57f17" : "#757575",
-            fontWeight: 600,
+            padding: "5px 12px",
+            borderRadius: "20px",
+            background: isConnected ? "#fffbeb" : isFallbackMode ? "#fef3c7" : "#f1f5f9",
+            color: isConnected ? "#b45309" : isFallbackMode ? "#92400e" : "#475569",
+            border: `1px solid ${isConnected ? "#fde68a" : isFallbackMode ? "#fde68a" : "#cbd5e1"}`,
+            fontWeight: 700,
             display: "inline-flex",
             alignItems: "center",
-            gap: "4px",
+            gap: "6px",
           }}
         >
-          {isConnected ? `🟢 ${t("common.liveActive")}` : isFallbackMode ? `🟡 ${t("common.fallbackPolling")}` : `⚪ ${t("common.connecting")}`}
+          {isConnected ? `🟢 Live Network Active` : isFallbackMode ? `🟡 Syncing via Polling` : `⚪ Connecting...`}
         </span>
       </div>
 
       {liveNotice && (
         <div
           style={{
-            background: "#e3f2fd",
-            border: "1px solid #90caf9",
-            borderRadius: "8px",
-            padding: "0.75rem",
-            color: "#1565c0",
-            fontSize: "0.85rem",
-            marginBottom: "1rem",
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            borderRadius: "10px",
+            padding: "0.85rem 1.25rem",
+            color: "#1e40af",
+            fontSize: "0.9rem",
+            fontWeight: 600,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -380,7 +398,7 @@ export default function VolunteerDashboard() {
           <span>{liveNotice}</span>
           <button
             onClick={() => setLiveNotice(null)}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#1565c0" }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#1e40af", fontWeight: 700 }}
           >
             ✕
           </button>
@@ -389,6 +407,81 @@ export default function VolunteerDashboard() {
 
       {error && <div style={styles.error}>⚠️ {error}</div>}
       {success && <div style={styles.success}>{success}</div>}
+
+      {/* 1. VOLUNTEER MILESTONES & STATS CARDS */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+          gap: "1rem",
+        }}
+      >
+        <div style={statsCardStyle}>
+          <div style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>🎯</div>
+          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#d97706" }}>{completedClaims.length}</div>
+          <div style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>Missions Completed</div>
+        </div>
+        <div style={statsCardStyle}>
+          <div style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>🚗</div>
+          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0f172a" }}>{activeMissions.length}</div>
+          <div style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>Active Deliveries In Progress</div>
+        </div>
+        <div style={statsCardStyle}>
+          <div style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>📦</div>
+          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#059669" }}>~{totalKgTransported.toFixed(1)} kg</div>
+          <div style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>Food Rescued & Delivered</div>
+        </div>
+        <div style={statsCardStyle}>
+          <div style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>🏅</div>
+          <div style={{ fontSize: "1.25rem", fontWeight: 800, color: "#b45309" }}>{rankTitle}</div>
+          <div style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>Courier Status Tier</div>
+        </div>
+      </div>
+
+      {/* PINNED ACTIVE MISSION COCKPIT */}
+      {primaryActiveMission && (
+        <div
+          style={{
+            background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+            border: "2px solid #f59e0b",
+            borderRadius: "14px",
+            padding: "1.25rem 1.5rem",
+            boxShadow: "0 4px 12px rgba(217, 119, 6, 0.12)",
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.75rem",
+          }}
+        >
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span className="pulse-dot" style={{ background: "#d97706" }} />
+              <strong style={{ fontSize: "1.05rem", color: "#92400e" }}>
+                🚨 Active Delivery Mission #{primaryActiveMission.id} in Progress
+              </strong>
+            </div>
+            <button
+              onClick={() => setActiveTab("my_deliveries")}
+              style={{
+                background: "#d97706",
+                color: "#ffffff",
+                border: "none",
+                borderRadius: "8px",
+                padding: "6px 14px",
+                fontSize: "0.85rem",
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Open Mission Cockpit & Complete →
+            </button>
+          </div>
+          <div style={{ fontSize: "0.9rem", color: "#78350f" }}>
+            Food: <strong>{donationDetails[primaryActiveMission.donation_id]?.food_type || "Surplus Food"}</strong> ({donationDetails[primaryActiveMission.donation_id]?.quantity || "10"} {donationDetails[primaryActiveMission.donation_id]?.unit || "kg"})
+            {" • "}
+            Status: <strong>{primaryActiveMission.status === "picked_up" ? "📦 Food Picked Up - Heading to Shelter" : "🚗 Assigned - Head to Donor for Pickup"}</strong>
+          </div>
+        </div>
+      )}
 
       {/* GPS BAR */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
@@ -929,4 +1022,13 @@ const styles = {
     background: statusColors[s] || "#64748b",
     textTransform: "uppercase" as const,
   }),
+};
+
+const statsCardStyle: React.CSSProperties = {
+  background: "#ffffff",
+  borderRadius: "14px",
+  padding: "1.25rem",
+  border: "1px solid #e2e8f0",
+  boxShadow: "0 2px 4px rgba(0,0,0,0.03)",
+  textAlign: "center",
 };

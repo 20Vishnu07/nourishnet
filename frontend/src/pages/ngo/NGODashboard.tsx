@@ -39,6 +39,7 @@ export default function NGODashboard() {
 
   const [donations, setDonations] = useState<Donation[]>([]);
   const [myClaims, setMyClaims] = useState<Claim[]>([]);
+  const [activeTab, setActiveTab] = useState<"radar" | "claims">("radar");
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
   const [radiusKm, setRadiusKm] = useState(10);
   const [loading, setLoading] = useState(false);
@@ -165,6 +166,7 @@ export default function NGODashboard() {
       });
       setClaimSuccess(t("ngo.claimSuccess", { foodType: donation.food_type }));
       setSelectedDonation(null);
+      setActiveTab("claims");
       await loadNearby();
       await loadMyClaims();
     } catch (err) {
@@ -193,37 +195,50 @@ export default function NGODashboard() {
     }
   };
 
+  const activeIncomingCount = myClaims.filter((c) => c.status !== "delivered").length;
+  const completedClaimsCount = myClaims.filter((c) => c.status === "delivered").length;
+  const courierAssignedCount = myClaims.filter((c) => c.volunteer_id && c.status !== "delivered").length;
+
   return (
-    <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-        <h2>🏢 {t("ngo.title")}</h2>
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      {/* Top Header */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.5rem" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: "1.45rem", fontWeight: 800, color: "#0f172a" }}>
+            🏢 {t("ngo.title")}
+          </h2>
+          <p style={{ margin: "2px 0 0", fontSize: "0.85rem", color: "#64748b" }}>
+            Real-time surplus food discovery, meal reservation, and volunteer courier dispatch.
+          </p>
+        </div>
         <span
           style={{
             fontSize: "0.75rem",
-            padding: "4px 10px",
-            borderRadius: "12px",
-            background: isConnected ? "#e8f5e9" : isFallbackMode ? "#fff8e1" : "#f5f5f5",
-            color: isConnected ? "#2e7d32" : isFallbackMode ? "#f57f17" : "#757575",
-            fontWeight: 600,
+            padding: "5px 12px",
+            borderRadius: "20px",
+            background: isConnected ? "#f0f9ff" : isFallbackMode ? "#fef3c7" : "#f1f5f9",
+            color: isConnected ? "#0369a1" : isFallbackMode ? "#92400e" : "#475569",
+            border: `1px solid ${isConnected ? "#bae6fd" : isFallbackMode ? "#fde68a" : "#cbd5e1"}`,
+            fontWeight: 700,
             display: "inline-flex",
             alignItems: "center",
-            gap: "4px",
+            gap: "6px",
           }}
         >
-          {isConnected ? `🟢 ${t("common.liveActive")}` : isFallbackMode ? `🟡 ${t("common.fallbackPolling")}` : `⚪ ${t("common.connecting")}`}
+          {isConnected ? `🟢 Live Network Active` : isFallbackMode ? `🟡 Syncing via Polling` : `⚪ Connecting...`}
         </span>
       </div>
 
       {liveNotification && (
         <div
           style={{
-            background: "#e3f2fd",
-            border: "1px solid #90caf9",
-            borderRadius: "8px",
-            padding: "0.75rem",
-            color: "#1565c0",
-            fontSize: "0.85rem",
-            marginBottom: "1rem",
+            background: "#eff6ff",
+            border: "1px solid #bfdbfe",
+            borderRadius: "10px",
+            padding: "0.85rem 1.25rem",
+            color: "#1e40af",
+            fontSize: "0.9rem",
+            fontWeight: 600,
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
@@ -232,22 +247,122 @@ export default function NGODashboard() {
           <span>{liveNotification}</span>
           <button
             onClick={() => setLiveNotification(null)}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#1565c0" }}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#1e40af", fontWeight: 700 }}
           >
             ✕
           </button>
         </div>
       )}
 
-      {geoError && (
-        <div style={styles.warning}>📍 {geoError}</div>
-      )}
-      {error && (
-        <div style={styles.error}>⚠️ {error}</div>
-      )}
-      {claimSuccess && (
-        <div style={styles.success}>✅ {claimSuccess}</div>
-      )}
+      {geoError && <div style={styles.warning}>📍 {geoError}</div>}
+      {error && <div style={styles.error}>⚠️ {error}</div>}
+      {claimSuccess && <div style={styles.success}>✅ {claimSuccess}</div>}
+
+      {/* 1. OPERATIONAL METRICS CARDS */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+          gap: "1rem",
+        }}
+      >
+        <div style={statsCardStyle}>
+          <div style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>📡</div>
+          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0284c7" }}>{donations.length}</div>
+          <div style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>Surplus Lots in {radiusKm}km</div>
+        </div>
+        <div style={statsCardStyle}>
+          <div style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>📦</div>
+          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#0f172a" }}>{activeIncomingCount}</div>
+          <div style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>Active Incoming Deliveries</div>
+        </div>
+        <div style={statsCardStyle}>
+          <div style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>🚗</div>
+          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#d97706" }}>{courierAssignedCount}</div>
+          <div style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>Volunteer Couriers Assigned</div>
+        </div>
+        <div style={statsCardStyle}>
+          <div style={{ fontSize: "1.8rem", marginBottom: "0.25rem" }}>✅</div>
+          <div style={{ fontSize: "1.6rem", fontWeight: 800, color: "#16a34a" }}>{completedClaimsCount}</div>
+          <div style={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>Total Deliveries Received</div>
+        </div>
+      </div>
+
+      {/* 2. TAB CONTROLS */}
+      <div
+        style={{
+          display: "flex",
+          gap: "8px",
+          borderBottom: "2px solid #e2e8f0",
+          paddingBottom: "4px",
+        }}
+      >
+        <button
+          onClick={() => setActiveTab("radar")}
+          style={{
+            background: "none",
+            border: "none",
+            borderBottom: activeTab === "radar" ? "3px solid #0284c7" : "3px solid transparent",
+            padding: "10px 18px",
+            fontSize: "0.95rem",
+            fontWeight: 700,
+            color: activeTab === "radar" ? "#0284c7" : "#64748b",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            transition: "all 0.15s ease",
+          }}
+        >
+          <span>📡 Available Surplus Radar</span>
+          <span
+            style={{
+              fontSize: "0.75rem",
+              background: activeTab === "radar" ? "#e0f2fe" : "#f1f5f9",
+              color: activeTab === "radar" ? "#0284c7" : "#64748b",
+              padding: "2px 8px",
+              borderRadius: "12px",
+            }}
+          >
+            {donations.length}
+          </span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("claims")}
+          style={{
+            background: "none",
+            border: "none",
+            borderBottom: activeTab === "claims" ? "3px solid #0284c7" : "3px solid transparent",
+            padding: "10px 18px",
+            fontSize: "0.95rem",
+            fontWeight: 700,
+            color: activeTab === "claims" ? "#0284c7" : "#64748b",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            transition: "all 0.15s ease",
+          }}
+        >
+          <span>📦 Incoming Deliveries & Claims</span>
+          <span
+            style={{
+              fontSize: "0.75rem",
+              background: activeTab === "claims" ? "#e0f2fe" : "#f1f5f9",
+              color: activeTab === "claims" ? "#0284c7" : "#64748b",
+              padding: "2px 8px",
+              borderRadius: "12px",
+            }}
+          >
+            {myClaims.length}
+          </span>
+        </button>
+      </div>
+
+      {/* TAB 1: RADAR */}
+      {activeTab === "radar" && (
+        <div>
 
       <div style={styles.controls}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
@@ -511,21 +626,41 @@ export default function NGODashboard() {
           </div>
         </>
       )}
+      </div>
+      )}
 
-      {/* CLAIMED FOOD LIST SECTION */}
-      <h3 style={{ marginTop: "2rem", display: "flex", alignItems: "center", gap: "8px" }}>
-        📋 {t("ngo.myClaimedFood")}
-        <span style={{
-          fontSize: "0.75rem",
-          background: "#0284c7",
-          color: "white",
-          padding: "2px 8px",
-          borderRadius: "12px",
-          fontWeight: 700,
-        }}>
-          {myClaims.length}
-        </span>
-      </h3>
+      {/* TAB 2: INCOMING DELIVERIES & CLAIMS */}
+      {activeTab === "claims" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+            <h3 style={{ margin: 0, display: "flex", alignItems: "center", gap: "8px", fontSize: "1.25rem", color: "#0f172a" }}>
+              📋 {t("ngo.myClaimedFood")}
+              <span style={{
+                fontSize: "0.75rem",
+                background: "#0284c7",
+                color: "white",
+                padding: "2px 8px",
+                borderRadius: "12px",
+                fontWeight: 700,
+              }}>
+                {myClaims.length}
+              </span>
+            </h3>
+            <button
+              onClick={() => loadMyClaims()}
+              style={{
+                background: "#f1f5f9",
+                border: "1px solid #cbd5e1",
+                padding: "6px 14px",
+                borderRadius: "8px",
+                fontSize: "0.8rem",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              🔄 Refresh Claims
+            </button>
+          </div>
 
       {myClaims.length === 0 ? (
         <p style={{ color: "#94a3b8", textAlign: "center", padding: "1.5rem", background: "#f8fafc", borderRadius: "10px", border: "1px dashed #cbd5e1" }}>
@@ -802,9 +937,20 @@ export default function NGODashboard() {
           })}
         </div>
       )}
+        </div>
+      )}
     </div>
   );
 }
+
+const statsCardStyle: React.CSSProperties = {
+  background: "#ffffff",
+  borderRadius: "14px",
+  padding: "1.25rem",
+  border: "1px solid #e2e8f0",
+  boxShadow: "0 2px 4px rgba(0,0,0,0.03)",
+  textAlign: "center",
+};
 
 const styles = {
   controls: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap" as const, gap: "0.5rem" },

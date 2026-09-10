@@ -156,35 +156,16 @@ export default function LandingPage() {
         org_name: orgName.trim() || undefined,
         address: address.trim() || undefined,
         language_pref: i18n.language || "en",
-      }, false);
+      }, true);
 
-      // Switch to sign-in tab, prefill email, clear password
-      setAuthMode("signin");
-      setPassword("");
-      const roleDisplayNames: Record<UserRole, string> = {
-        donor: "Food Donor",
-        ngo: "NGO / Shelter",
-        volunteer: "Volunteer Courier",
-      };
-      const successMsg = `🎉 Account created successfully for ${name.trim()} as ${roleDisplayNames[selectedRole]}! Please enter your password to sign in.`;
-      setLocalSuccess(successMsg);
-      
-      // Trigger celebratory popup modal
-      setSignupSuccessData({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
-        role: selectedRole,
-      });
-
-      // Also trigger unmistakable browser popup alert!
-      try {
-        window.alert(successMsg);
-      } catch {}
+      // Direct auto-login to registered account portal!
+      setIsAuthOpen(false);
+      navigate("/dashboard", { replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed";
       let errMsg = msg;
       if (msg.toLowerCase().includes("already registered") || msg.toLowerCase().includes("already exists")) {
-        errMsg = "⚠️ This email ID is already registered. Please sign in below with your password, or use a different email.";
+        errMsg = "⚠️ This email ID is already registered. Please sign in with your password, or use a different email.";
       }
       setLocalError(errMsg);
       try {
@@ -345,41 +326,62 @@ export default function LandingPage() {
           <div style={landingStyles.navRight}>
             <LanguageSwitcher />
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "nowrap" }}>
-              <button
-                onClick={() => openSignIn()}
-                style={{
-                  ...landingStyles.navSignInBtn,
-                  backgroundColor: "#ffffff",
-                  color: colors.primary,
-                  border: `1.5px solid ${colors.primary}`,
-                }}
-              >
-                {t("auth.signIn")}
-              </button>
-              <button
-                onClick={() => openSignUp()}
-                style={{
-                  ...landingStyles.navSignInBtn,
-                  backgroundColor: colors.primary,
-                  color: "#ffffff",
-                  border: `1.5px solid ${colors.primary}`,
-                }}
-              >
-                {t("auth.signUp")}
-              </button>
-              {appUser && (
-                <button
-                  onClick={logout}
-                  style={{
-                    ...landingStyles.navSignInBtn,
-                    backgroundColor: "transparent",
-                    color: colors.textMuted,
-                    border: `1.5px solid ${colors.border}`,
-                  }}
-                  title="Sign out of current account"
-                >
-                  {t("common.logout")}
-                </button>
+              {appUser ? (
+                <>
+                  <button
+                    onClick={() => navigate("/dashboard")}
+                    style={{
+                      ...landingStyles.navSignInBtn,
+                      backgroundColor: colors.primary,
+                      color: "#ffffff",
+                      border: `1.5px solid ${colors.primary}`,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    <span>{appUser.role === "donor" ? "🍲" : appUser.role === "ngo" ? "🏢" : "🚗"}</span>
+                    <span>My {appUser.role === "donor" ? "Donor" : appUser.role === "ngo" ? "NGO" : "Volunteer"} Portal</span>
+                  </button>
+                  <button
+                    onClick={logout}
+                    style={{
+                      ...landingStyles.navSignInBtn,
+                      backgroundColor: "transparent",
+                      color: colors.textMuted,
+                      border: `1.5px solid ${colors.border}`,
+                    }}
+                    title="Sign out of current account"
+                  >
+                    {t("common.logout")}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => openSignIn()}
+                    style={{
+                      ...landingStyles.navSignInBtn,
+                      backgroundColor: "#ffffff",
+                      color: colors.primary,
+                      border: `1.5px solid ${colors.primary}`,
+                    }}
+                  >
+                    {t("auth.signIn")}
+                  </button>
+                  <button
+                    onClick={() => openSignUp()}
+                    style={{
+                      ...landingStyles.navSignInBtn,
+                      backgroundColor: colors.primary,
+                      color: "#ffffff",
+                      border: `1.5px solid ${colors.primary}`,
+                    }}
+                  >
+                    {t("auth.signUp")}
+                  </button>
+                </>
               )}
             </div>
           </div>

@@ -6,24 +6,7 @@ import DashboardPage from "./pages/DashboardPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function AppRoutes() {
-  const { appUser, isInitialLoading } = useAuth();
-
-  if (isInitialLoading) {
-    return (
-      <div style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "var(--font-main, system-ui, sans-serif)",
-      }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontSize: "2.5rem", marginBottom: "8px" }}>🌱</div>
-          <p style={{ color: "#059669", fontWeight: 700 }}>NourishNet Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  const { appUser } = useAuth();
 
   return (
     <Routes>

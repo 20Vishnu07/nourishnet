@@ -158,6 +158,11 @@ export default function LandingPage() {
         language_pref: i18n.language || "en",
       }, true);
 
+      sessionStorage.setItem("account_created", "true");
+      try {
+        window.alert("Account Created Successfully");
+      } catch {}
+
       // Direct auto-login to registered account portal!
       setIsAuthOpen(false);
       navigate("/dashboard", { replace: true });

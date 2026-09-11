@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -12,6 +13,16 @@ import type { UserRole } from "../contexts/AuthContext";
 export default function DashboardPage() {
   const { t } = useTranslation();
   const { appUser, logout } = useAuth();
+  const [showWelcomeToast, setShowWelcomeToast] = useState(() => {
+    if (typeof window !== "undefined") {
+      const flag = sessionStorage.getItem("account_created");
+      if (flag) {
+        sessionStorage.removeItem("account_created");
+        return true;
+      }
+    }
+    return false;
+  });
 
   if (!appUser) return null;
 
@@ -141,6 +152,44 @@ export default function DashboardPage() {
       </div>
 
       <main style={styles.main}>
+        {showWelcomeToast && (
+          <div
+            style={{
+              background: "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+              color: "#ffffff",
+              padding: "0.85rem 1.25rem",
+              borderRadius: "10px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              fontWeight: 700,
+              fontSize: "0.95rem",
+              boxShadow: "0 4px 12px rgba(16, 185, 129, 0.25)",
+              marginBottom: "1.25rem",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <span style={{ fontSize: "1.2rem" }}>🎉</span>
+              <span>Account Created Successfully! Welcome to your {currentTheme.portalTitle}.</span>
+            </div>
+            <button
+              onClick={() => setShowWelcomeToast(false)}
+              style={{
+                background: "rgba(255, 255, 255, 0.2)",
+                border: "none",
+                color: "#ffffff",
+                cursor: "pointer",
+                borderRadius: "6px",
+                padding: "4px 8px",
+                fontSize: "0.85rem",
+                fontWeight: 700,
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {activeRole === "donor" && <DonorDashboard />}
         {activeRole === "ngo" && <NGODashboard />}
         {activeRole === "volunteer" && <VolunteerDashboard />}

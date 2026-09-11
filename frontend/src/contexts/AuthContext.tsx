@@ -73,43 +73,34 @@ interface TokenResponse {
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    firebaseUser: null,
-    appUser: null,
-    token: null,
-    isLoading: false,
-    isInitialLoading: true,
-    isNewUser: false,
-    error: null,
-  });
-
-  // Restore session from localStorage
-  useEffect(() => {
-    const savedToken = localStorage.getItem("nourishnet_token");
-    const savedUser = localStorage.getItem("nourishnet_user");
-
-    if (savedToken && savedUser) {
+  const [state, setState] = useState<AuthState>(() => {
+    let savedToken: string | null = null;
+    let savedUser: AppUser | null = null;
+    if (typeof window !== "undefined") {
       try {
-        const user = JSON.parse(savedUser) as AppUser;
-        if (user.language_pref) {
-          i18n.changeLanguage(user.language_pref);
+        savedToken = localStorage.getItem("nourishnet_token");
+        const rawUser = localStorage.getItem("nourishnet_user");
+        if (savedToken && rawUser) {
+          savedUser = JSON.parse(rawUser) as AppUser;
+          if (savedUser?.language_pref) {
+            i18n.changeLanguage(savedUser.language_pref);
+          }
         }
-        setState((prev) => ({
-          ...prev,
-          token: savedToken,
-          appUser: user,
-          isLoading: false,
-          isInitialLoading: false,
-        }));
       } catch {
         localStorage.removeItem("nourishnet_token");
         localStorage.removeItem("nourishnet_user");
-        setState((prev) => ({ ...prev, isLoading: false, isInitialLoading: false }));
       }
-    } else {
-      setState((prev) => ({ ...prev, isLoading: false, isInitialLoading: false }));
     }
-  }, []);
+    return {
+      firebaseUser: null,
+      appUser: savedUser,
+      token: savedToken,
+      isLoading: false,
+      isInitialLoading: false,
+      isNewUser: false,
+      error: null,
+    };
+  });
 
   // Listen for Firebase auth state changes
   useEffect(() => {

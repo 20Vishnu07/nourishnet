@@ -116,6 +116,11 @@ export default function LoginPage() {
         language_pref: i18n.language || "en",
       }, true);
 
+      sessionStorage.setItem("account_created", "true");
+      try {
+        window.alert("Account Created Successfully");
+      } catch {}
+
       // Directly enter account on sign-up without needing to sign in again!
       navigate("/dashboard", { replace: true });
     } catch (err) {

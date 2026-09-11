@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { colors, shadows } from "../styles/theme";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { useAuth, type UserRole } from "../contexts/AuthContext";
-import { apiFetch } from "../config/api";
+import { apiFetch, warmUpBackend } from "../config/api";
 
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
@@ -39,6 +39,7 @@ export default function LandingPage() {
   const displayError = localError || error;
 
   const openSignIn = (role?: UserRole | React.MouseEvent) => {
+    warmUpBackend();
     if (typeof role === "string") {
       setSelectedRole(role);
     }
@@ -50,6 +51,7 @@ export default function LandingPage() {
   };
 
   const openSignUp = (role?: UserRole | React.MouseEvent) => {
+    warmUpBackend();
     if (typeof role === "string") {
       setSelectedRole(role);
     }
@@ -61,6 +63,7 @@ export default function LandingPage() {
   };
 
   const openAuthWithRole = (role: UserRole, mode: "signin" | "signup" = "signup") => {
+    warmUpBackend();
     setSelectedRole(role);
     setAuthMode(mode);
     setLocalError(null);
@@ -1294,11 +1297,49 @@ export default function LandingPage() {
 
                 <button
                   type="submit"
-                  style={landingStyles.modalSubmitBtn}
+                  style={{
+                    ...landingStyles.modalSubmitBtn,
+                    opacity: isLoading ? 0.8 : 1,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "8px",
+                  }}
                   disabled={isLoading}
                 >
-                  {isLoading ? t("auth.signingUp") : `Register as ${selectedRole === "donor" ? "Donor" : selectedRole === "ngo" ? "NGO" : "Volunteer"}`}
+                  {isLoading && (
+                    <span
+                      style={{
+                        width: "16px",
+                        height: "16px",
+                        border: "2px solid #ffffff",
+                        borderTopColor: "transparent",
+                        borderRadius: "50%",
+                        display: "inline-block",
+                        animation: "spin 0.8s linear infinite",
+                      }}
+                    />
+                  )}
+                  <span>
+                    {isLoading
+                      ? "Creating Account..."
+                      : `Register as ${selectedRole === "donor" ? "Donor" : selectedRole === "ngo" ? "NGO" : "Volunteer"}`}
+                  </span>
                 </button>
+
+                {isLoading && (
+                  <p
+                    style={{
+                      margin: "4px 0 0",
+                      fontSize: "0.78rem",
+                      color: colors.primaryDark,
+                      textAlign: "center",
+                      fontWeight: 600,
+                    }}
+                  >
+                    ⚡ Securing your account & connecting to cloud server...
+                  </p>
+                )}
 
                 <button
                   type="button"

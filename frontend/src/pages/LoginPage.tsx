@@ -1,10 +1,10 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth, type UserRole } from "../contexts/AuthContext";
 import LanguageSwitcher from "../components/LanguageSwitcher";
 import { colors, shadows } from "../styles/theme";
-import { apiFetch } from "../config/api";
+import { apiFetch, warmUpBackend } from "../config/api";
 
 type AuthMode = "signin" | "signup" | "forgot";
 
@@ -41,6 +41,10 @@ export default function LoginPage() {
   const [isResetSubmitting, setIsResetSubmitting] = useState(false);
 
   const displayError = localError || error;
+
+  useEffect(() => {
+    warmUpBackend();
+  }, []);
 
   const handleSignIn = async (e: FormEvent) => {
     e.preventDefault();
@@ -671,9 +675,51 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <button type="submit" style={styles.button} disabled={isLoading}>
-              {isLoading ? t("auth.signingUp") : t("auth.signUp")}
+            <button
+              type="submit"
+              style={{
+                ...styles.button,
+                opacity: isLoading ? 0.8 : 1,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+              }}
+              disabled={isLoading}
+            >
+              {isLoading && (
+                <span
+                  style={{
+                    width: "16px",
+                    height: "16px",
+                    border: "2px solid #ffffff",
+                    borderTopColor: "transparent",
+                    borderRadius: "50%",
+                    display: "inline-block",
+                    animation: "spin 0.8s linear infinite",
+                  }}
+                />
+              )}
+              <span>
+                {isLoading
+                  ? "Creating Account..."
+                  : `Sign Up as ${roleTitles[role].title}`}
+              </span>
             </button>
+
+            {isLoading && (
+              <p
+                style={{
+                  margin: "4px 0 0",
+                  fontSize: "0.78rem",
+                  color: colors.primaryDark,
+                  textAlign: "center",
+                  fontWeight: 600,
+                }}
+              >
+                ⚡ Securing your account & connecting to cloud server...
+              </p>
+            )}
 
             <button
               type="button"

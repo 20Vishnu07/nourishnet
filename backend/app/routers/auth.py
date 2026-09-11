@@ -53,17 +53,10 @@ def register_user(request: UserRegisterRequest, db: Session = Depends(get_db)):
             detail="Email is already registered. Please sign in instead.",
         )
 
-    # Provide safe unique phone handling in case SQLite schema has legacy UNIQUE/NOT NULL constraint on phone
+    # Provide safe phone handling without extra synchronous DB scan
     import uuid
     raw_phone = request.phone.strip() if request.phone and request.phone.strip() else None
-    if raw_phone:
-        existing_phone = db.query(User).filter(User.phone == raw_phone).first()
-        if existing_phone and existing_phone.email != clean_email:
-            phone_val = f"{raw_phone[:14]}_{uuid.uuid4().hex[:4]}"[:20]
-        else:
-            phone_val = raw_phone[:20]
-    else:
-        phone_val = f"+91{uuid.uuid4().int % 10**10:010d}"[:20]
+    phone_val = raw_phone[:20] if raw_phone else f"+91{uuid.uuid4().int % 10**10:010d}"[:20]
 
     new_user = User(
         email=clean_email,

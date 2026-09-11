@@ -36,3 +36,8 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
 
   return response.json() as Promise<T>;
 }
+
+export function warmUpBackend(): void {
+  if (typeof window === "undefined") return;
+  fetch(`${API_BASE_URL}/health`, { method: "GET", mode: "cors" }).catch(() => {});
+}

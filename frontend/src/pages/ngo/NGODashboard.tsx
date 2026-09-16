@@ -39,7 +39,7 @@ export default function NGODashboard() {
 
   const [donations, setDonations] = useState<Donation[]>([]);
   const [myClaims, setMyClaims] = useState<Claim[]>([]);
-  const [activeTab, setActiveTab] = useState<"radar" | "claims">("radar");
+  const [activeTab, setActiveTab] = useState<"overview" | "radar" | "claims">("overview");
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
   const [radiusKm, setRadiusKm] = useState(10);
   const [loading, setLoading] = useState(false);
@@ -211,22 +211,43 @@ export default function NGODashboard() {
             Real-time surplus food discovery, meal reservation, and volunteer courier dispatch.
           </p>
         </div>
-        <span
-          style={{
-            fontSize: "0.75rem",
-            padding: "5px 12px",
-            borderRadius: "20px",
-            background: isConnected ? "#f0f9ff" : isFallbackMode ? "#fef3c7" : "#f1f5f9",
-            color: isConnected ? "#0369a1" : isFallbackMode ? "#92400e" : "#475569",
-            border: `1px solid ${isConnected ? "#bae6fd" : isFallbackMode ? "#fde68a" : "#cbd5e1"}`,
-            fontWeight: 700,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-          }}
-        >
-          {isConnected ? `🟢 Live Network Active` : isFallbackMode ? `🟡 Syncing via Polling` : `⚪ Connecting...`}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span
+            style={{
+              fontSize: "0.75rem",
+              padding: "5px 12px",
+              borderRadius: "20px",
+              background: isConnected ? "#f0f9ff" : isFallbackMode ? "#fef3c7" : "#f1f5f9",
+              color: isConnected ? "#0369a1" : isFallbackMode ? "#92400e" : "#475569",
+              border: `1px solid ${isConnected ? "#bae6fd" : isFallbackMode ? "#fde68a" : "#cbd5e1"}`,
+              fontWeight: 700,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            {isConnected ? `🟢 Live Network Active` : isFallbackMode ? `🟡 Syncing via Polling` : `⚪ Connecting...`}
+          </span>
+          <button
+            onClick={() => setActiveTab(activeTab === "radar" ? "overview" : "radar")}
+            style={{
+              background: activeTab === "radar" ? "#f1f5f9" : "#0284c7",
+              color: activeTab === "radar" ? "#0f172a" : "#ffffff",
+              border: activeTab === "radar" ? "1px solid #cbd5e1" : "none",
+              padding: "7px 16px",
+              borderRadius: "10px",
+              fontWeight: 700,
+              fontSize: "0.85rem",
+              cursor: "pointer",
+              boxShadow: activeTab === "radar" ? "none" : "0 2px 6px rgba(2, 132, 199, 0.3)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            {activeTab === "radar" ? "← Back to Homepage" : "🔍 Find & Claim Food"}
+          </button>
+        </div>
       </div>
 
       {liveNotification && (
@@ -295,8 +316,30 @@ export default function NGODashboard() {
           gap: "8px",
           borderBottom: "2px solid #e2e8f0",
           paddingBottom: "4px",
+          overflowX: "auto",
         }}
       >
+        <button
+          onClick={() => setActiveTab("overview")}
+          style={{
+            background: "none",
+            border: "none",
+            borderBottom: activeTab === "overview" ? "3px solid #0284c7" : "3px solid transparent",
+            padding: "10px 18px",
+            fontSize: "0.95rem",
+            fontWeight: 700,
+            color: activeTab === "overview" ? "#0284c7" : "#64748b",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            transition: "all 0.15s ease",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span>🏠 Overview Homepage</span>
+        </button>
+
         <button
           onClick={() => setActiveTab("radar")}
           style={{
@@ -312,6 +355,7 @@ export default function NGODashboard() {
             alignItems: "center",
             gap: "8px",
             transition: "all 0.15s ease",
+            whiteSpace: "nowrap",
           }}
         >
           <span>📡 Available Surplus Radar</span>
@@ -343,6 +387,7 @@ export default function NGODashboard() {
             alignItems: "center",
             gap: "8px",
             transition: "all 0.15s ease",
+            whiteSpace: "nowrap",
           }}
         >
           <span>📦 Incoming Deliveries & Claims</span>
@@ -360,9 +405,274 @@ export default function NGODashboard() {
         </button>
       </div>
 
+      {/* TAB 0: NGO OVERVIEW HOMEPAGE */}
+      {activeTab === "overview" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          {/* Welcome Action Hero Banner */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
+              borderRadius: "16px",
+              padding: "2rem",
+              color: "#ffffff",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "1.25rem",
+              boxShadow: "0 4px 14px rgba(2, 132, 199, 0.25)",
+            }}
+          >
+            <div style={{ maxWidth: "600px" }}>
+              <div style={{ display: "inline-block", background: "rgba(255,255,255,0.2)", padding: "3px 10px", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 700, marginBottom: "8px" }}>
+                🏢 Shelter & NGO Command Center
+              </div>
+              <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.5rem", fontWeight: 800 }}>
+                Welcome, {appUser?.org_name || appUser?.name}! 🍲
+              </h3>
+              <p style={{ margin: 0, fontSize: "0.92rem", opacity: 0.95, lineHeight: 1.5 }}>
+                Discover available surplus food from local restaurants, cafes, and events. Claim batches for your community shelter and dispatch volunteer couriers with automated live GPS tracking.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTab("radar")}
+              style={{
+                background: "#ffffff",
+                color: "#0369a1",
+                border: "none",
+                borderRadius: "12px",
+                padding: "12px 24px",
+                fontWeight: 800,
+                fontSize: "1rem",
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "transform 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            >
+              <span>🔍 Find & Claim Food</span>
+              <span>→</span>
+            </button>
+          </div>
+
+          {/* Incoming Deliveries & Status Updates */}
+          <div style={{ background: "#ffffff", borderRadius: "16px", padding: "1.5rem", border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>
+                  🚚 Incoming Food Deliveries & Real-Time Status
+                </h4>
+                <p style={{ margin: "2px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
+                  Live overview of claimed food batches and active volunteer courier handovers.
+                </p>
+              </div>
+              {myClaims.length > 0 && (
+                <button
+                  onClick={() => setActiveTab("claims")}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#0284c7",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                >
+                  View All ({myClaims.length}) →
+                </button>
+              )}
+            </div>
+
+            {myClaims.filter((c) => c.status !== "delivered").length === 0 ? (
+              <div style={{ textAlign: "center", padding: "2.5rem 1rem", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>📡</div>
+                <h5 style={{ margin: "0 0 0.25rem", fontSize: "1rem", color: "#334155", fontWeight: 700 }}>No Incoming Deliveries Right Now</h5>
+                <p style={{ margin: "0 0 1rem", fontSize: "0.82rem", color: "#64748b" }}>
+                  Explore the live radar to find and claim nearby cooked meals, bakery goods, or fresh produce for your shelter.
+                </p>
+                <button
+                  onClick={() => setActiveTab("radar")}
+                  style={{
+                    background: "#0284c7",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "8px 18px",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  🔍 Open Surplus Food Radar
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
+                {myClaims.filter((c) => c.status !== "delivered").slice(0, 4).map((claim) => (
+                  <div
+                    key={claim.id}
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "12px",
+                      padding: "1rem",
+                      background: "#f8fafc",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      gap: "0.75rem",
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
+                        <span style={{ fontWeight: 800, fontSize: "0.98rem", color: "#0f172a" }}>
+                          Claim #{claim.id} • {claim.donation?.food_type || "Surplus Meal"}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "0.72rem",
+                            fontWeight: 700,
+                            padding: "3px 8px",
+                            borderRadius: "12px",
+                            background:
+                              claim.status === "claimed"
+                                ? "#eff6ff"
+                                : claim.status === "picked_up"
+                                ? "#fffbeb"
+                                : "#ecfdf5",
+                            color:
+                              claim.status === "claimed"
+                                ? "#1e40af"
+                                : claim.status === "picked_up"
+                                ? "#b45309"
+                                : "#065f46",
+                            border: `1px solid ${
+                              claim.status === "claimed"
+                                ? "#bfdbfe"
+                                : claim.status === "picked_up"
+                                ? "#fde68a"
+                                : "#a7f3d0"
+                            }`,
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {claim.status === "claimed"
+                            ? "🔵 Order Reserved"
+                            : claim.status === "picked_up"
+                            ? "🚗 Courier In Transit"
+                            : "✅ Delivered"}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "0.85rem", color: "#475569" }}>
+                        <strong>Quantity:</strong> {claim.donation ? `${claim.donation.quantity} ${claim.donation.unit}` : "Batch"}
+                      </div>
+                      {claim.volunteer ? (
+                        <div style={{ fontSize: "0.8rem", color: "#0284c7", marginTop: "4px", fontWeight: 600 }}>
+                          🚗 Courier: {claim.volunteer.name}{" "}
+                          {claim.volunteer.phone && (
+                            <a href={`tel:${claim.volunteer.phone}`} style={{ color: "#0284c7", marginLeft: "4px" }}>
+                              📞 {claim.volunteer.phone}
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: "0.8rem", color: "#d97706", marginTop: "4px", fontWeight: 600 }}>
+                          ⏳ Awaiting volunteer courier pickup
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: "6px" }}>
+                      <span style={{ fontSize: "0.75rem", color: "#94a3b8" }}>
+                        {new Date(claim.claimed_at).toLocaleDateString()}
+                      </span>
+                      <button
+                        onClick={() => {
+                          setActiveTab("claims");
+                          setExpandedTrackingId(claim.id);
+                        }}
+                        style={{
+                          background: "#e0f2fe",
+                          color: "#0284c7",
+                          border: "none",
+                          borderRadius: "6px",
+                          padding: "4px 10px",
+                          fontSize: "0.75rem",
+                          fontWeight: 700,
+                          cursor: "pointer",
+                        }}
+                      >
+                        Track Delivery →
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Shelter Operations & Food Safety Guidelines */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
+            <div style={{ background: "#ffffff", borderRadius: "14px", padding: "1.25rem", border: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🍲</div>
+              <h5 style={{ margin: "0 0 0.35rem", fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>
+                Hot Holding & Prompt Serving
+              </h5>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: 1.5 }}>
+                Ensure incoming cooked meals are served promptly or stored in thermal holding equipment at safe temperatures.
+              </p>
+            </div>
+
+            <div style={{ background: "#ffffff", borderRadius: "14px", padding: "1.25rem", border: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🏷️</div>
+              <h5 style={{ margin: "0 0 0.35rem", fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>
+                Intake & Allergen Inspection
+              </h5>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: 1.5 }}>
+                Check donor packaging seals and dietary indicators (Vegetarian / Halal / Dairy) before serving shelter beneficiaries.
+              </p>
+            </div>
+
+            <div style={{ background: "#ffffff", borderRadius: "14px", padding: "1.25rem", border: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>📸</div>
+              <h5 style={{ margin: "0 0 0.35rem", fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>
+                Verified Delivery Proofs
+              </h5>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: 1.5 }}>
+                Volunteer couriers take a photo proof upon dropoff to guarantee accountability and complete transparency.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* TAB 1: RADAR */}
       {activeTab === "radar" && (
         <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <button
+              onClick={() => setActiveTab("overview")}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#0284c7",
+                fontWeight: 700,
+                fontSize: "0.88rem",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: 0,
+              }}
+            >
+              ← Back to Overview Homepage
+            </button>
+            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Live Surplus Map & Discovery Radar</span>
+          </div>
 
       <div style={styles.controls}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
@@ -422,6 +732,13 @@ export default function NGODashboard() {
         center={{ lat: radarLat, lng: radarLng }}
         donations={donations}
         onDonationClick={(d) => setSelectedDonation(d as Donation)}
+        onCenterChange={(newLat, newLng) => {
+          setRadarLat(newLat);
+          setRadarLng(newLng);
+          loadNearby(newLat, newLng);
+        }}
+        onDetectLocation={handleAutoDetectLocation}
+        detecting={detectingLocation}
       />
 
       <p style={styles.count}>

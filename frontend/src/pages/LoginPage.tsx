@@ -39,6 +39,7 @@ export default function LoginPage() {
   const [newPassword, setNewPassword] = useState("");
   const [resetStep, setResetStep] = useState<1 | 2>(1);
   const [isResetSubmitting, setIsResetSubmitting] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const displayError = localError || error;
 
@@ -108,6 +109,7 @@ export default function LoginPage() {
       return;
     }
 
+    setIsRegistering(true);
     try {
       await register({
         name: name.trim(),
@@ -140,6 +142,8 @@ export default function LoginPage() {
       try {
         window.alert(errMsg);
       } catch {}
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -679,15 +683,15 @@ export default function LoginPage() {
               type="submit"
               style={{
                 ...styles.button,
-                opacity: isLoading ? 0.8 : 1,
+                opacity: (isLoading || isRegistering) ? 0.8 : 1,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
                 gap: "8px",
               }}
-              disabled={isLoading}
+              disabled={isLoading || isRegistering}
             >
-              {isLoading && (
+              {(isLoading || isRegistering) && (
                 <span
                   style={{
                     width: "16px",
@@ -701,8 +705,8 @@ export default function LoginPage() {
                 />
               )}
               <span>
-                {isLoading
-                  ? "Creating Account..."
+                {isRegistering || isLoading
+                  ? "⚡ Creating Account..."
                   : `Sign Up as ${roleTitles[role].title}`}
               </span>
             </button>

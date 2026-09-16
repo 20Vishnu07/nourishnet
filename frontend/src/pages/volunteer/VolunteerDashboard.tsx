@@ -59,7 +59,7 @@ export default function VolunteerDashboard() {
     }
   }, [userLat, userLng]);
 
-  const [activeTab, setActiveTab] = useState<"available" | "my_deliveries">("available");
+  const [activeTab, setActiveTab] = useState<"overview" | "available" | "my_deliveries">("overview");
   const [claims, setClaims] = useState<Claim[]>([]);
   const [availableClaims, setAvailableClaims] = useState<Claim[]>([]);
   const [donationDetails, setDonationDetails] = useState<Record<number, Donation>>({});
@@ -362,22 +362,43 @@ export default function VolunteerDashboard() {
             Pick up surplus food from donors and transport it directly to local shelters in need.
           </p>
         </div>
-        <span
-          style={{
-            fontSize: "0.75rem",
-            padding: "5px 12px",
-            borderRadius: "20px",
-            background: isConnected ? "#fffbeb" : isFallbackMode ? "#fef3c7" : "#f1f5f9",
-            color: isConnected ? "#b45309" : isFallbackMode ? "#92400e" : "#475569",
-            border: `1px solid ${isConnected ? "#fde68a" : isFallbackMode ? "#fde68a" : "#cbd5e1"}`,
-            fontWeight: 700,
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-          }}
-        >
-          {isConnected ? `🟢 Live Network Active` : isFallbackMode ? `🟡 Syncing via Polling` : `⚪ Connecting...`}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+          <span
+            style={{
+              fontSize: "0.75rem",
+              padding: "5px 12px",
+              borderRadius: "20px",
+              background: isConnected ? "#fffbeb" : isFallbackMode ? "#fef3c7" : "#f1f5f9",
+              color: isConnected ? "#b45309" : isFallbackMode ? "#92400e" : "#475569",
+              border: `1px solid ${isConnected ? "#fde68a" : isFallbackMode ? "#fde68a" : "#cbd5e1"}`,
+              fontWeight: 700,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            {isConnected ? `🟢 Live Network Active` : isFallbackMode ? `🟡 Syncing via Polling` : `⚪ Connecting...`}
+          </span>
+          <button
+            onClick={() => setActiveTab(activeTab === "available" ? "overview" : "available")}
+            style={{
+              background: activeTab === "available" ? "#f1f5f9" : "#d97706",
+              color: activeTab === "available" ? "#0f172a" : "#ffffff",
+              border: activeTab === "available" ? "1px solid #cbd5e1" : "none",
+              padding: "7px 16px",
+              borderRadius: "10px",
+              fontWeight: 700,
+              fontSize: "0.85rem",
+              cursor: "pointer",
+              boxShadow: activeTab === "available" ? "none" : "0 2px 6px rgba(217, 119, 6, 0.3)",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+          >
+            {activeTab === "available" ? "← Back to Homepage" : "🚗 Available Delivery Missions"}
+          </button>
+        </div>
       </div>
 
       {liveNotice && (
@@ -531,7 +552,32 @@ export default function VolunteerDashboard() {
         borderRadius: "10px",
         marginBottom: "1.25rem",
         gap: "4px",
+        overflowX: "auto",
       }}>
+        <button
+          type="button"
+          onClick={() => setActiveTab("overview")}
+          style={{
+            flex: 1,
+            padding: "10px",
+            border: "none",
+            borderRadius: "8px",
+            fontWeight: 700,
+            fontSize: "0.88rem",
+            cursor: "pointer",
+            background: activeTab === "overview" ? "#ffffff" : "transparent",
+            color: activeTab === "overview" ? "#d97706" : "#64748b",
+            boxShadow: activeTab === "overview" ? "0 2px 4px rgba(0,0,0,0.06)" : "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: "8px",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span>🏠 Overview Homepage</span>
+        </button>
+
         <button
           type="button"
           onClick={() => setActiveTab("available")}
@@ -550,6 +596,7 @@ export default function VolunteerDashboard() {
             alignItems: "center",
             justifyContent: "center",
             gap: "8px",
+            whiteSpace: "nowrap",
           }}
         >
           <span>📍 Open Delivery Requests</span>
@@ -582,6 +629,7 @@ export default function VolunteerDashboard() {
             alignItems: "center",
             justifyContent: "center",
             gap: "8px",
+            whiteSpace: "nowrap",
           }}
         >
           <span>🚗 My Deliveries</span>
@@ -597,9 +645,258 @@ export default function VolunteerDashboard() {
         </button>
       </div>
 
+      {/* TAB 0: VOLUNTEER OVERVIEW HOMEPAGE */}
+      {activeTab === "overview" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          {/* Welcome Action Hero Banner */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
+              borderRadius: "16px",
+              padding: "2rem",
+              color: "#ffffff",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "1.25rem",
+              boxShadow: "0 4px 14px rgba(217, 119, 6, 0.25)",
+            }}
+          >
+            <div style={{ maxWidth: "600px" }}>
+              <div style={{ display: "inline-block", background: "rgba(255,255,255,0.2)", padding: "3px 10px", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 700, marginBottom: "8px" }}>
+                🚗 Volunteer Courier Command Center
+              </div>
+              <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.5rem", fontWeight: 800 }}>
+                Welcome, {appUser?.name}! ⚡
+              </h3>
+              <p style={{ margin: 0, fontSize: "0.92rem", opacity: 0.95, lineHeight: 1.5 }}>
+                Help rescue surplus food from local restaurants and banquet halls and deliver it to shelters in need. Accept available rescue missions, follow live GPS routes, and make an immediate community impact.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTab("available")}
+              style={{
+                background: "#ffffff",
+                color: "#b45309",
+                border: "none",
+                borderRadius: "12px",
+                padding: "12px 24px",
+                fontWeight: 800,
+                fontSize: "1rem",
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "transform 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            >
+              <span>🚗 Available Delivery Missions</span>
+              <span>→</span>
+            </button>
+          </div>
+
+          {/* Active Mission Cockpit Card */}
+          <div style={{ background: "#ffffff", borderRadius: "16px", padding: "1.5rem", border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>
+                  📍 Active Mission Cockpit & Live Status
+                </h4>
+                <p style={{ margin: "2px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
+                  Step-by-step progress for deliveries currently assigned to you.
+                </p>
+              </div>
+              {claims.length > 0 && (
+                <button
+                  onClick={() => setActiveTab("my_deliveries")}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#d97706",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                >
+                  View All Deliveries ({claims.length}) →
+                </button>
+              )}
+            </div>
+
+            {primaryActiveMission ? (
+              <div
+                style={{
+                  background: "linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%)",
+                  border: "2px solid #f59e0b",
+                  borderRadius: "14px",
+                  padding: "1.25rem",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "1rem",
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "0.5rem" }}>
+                  <div>
+                    <span style={{ fontSize: "0.78rem", fontWeight: 700, color: "#b45309", background: "#fde68a", padding: "3px 8px", borderRadius: "10px" }}>
+                      ⚡ Mission #{primaryActiveMission.id} in Progress
+                    </span>
+                    <h5 style={{ margin: "6px 0 2px", fontSize: "1.1rem", fontWeight: 800, color: "#0f172a" }}>
+                      {donationDetails[primaryActiveMission.donation_id]?.food_type || "Surplus Food Rescue"}
+                    </h5>
+                    <p style={{ margin: 0, fontSize: "0.85rem", color: "#475569" }}>
+                      Quantity: <strong>{donationDetails[primaryActiveMission.donation_id]?.quantity} {donationDetails[primaryActiveMission.donation_id]?.unit}</strong>
+                    </p>
+                  </div>
+
+                  <span
+                    style={{
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      padding: "4px 12px",
+                      borderRadius: "12px",
+                      background: primaryActiveMission.status === "picked_up" ? "#ecfdf5" : "#eff6ff",
+                      color: primaryActiveMission.status === "picked_up" ? "#065f46" : "#1e40af",
+                      border: `1px solid ${primaryActiveMission.status === "picked_up" ? "#a7f3d0" : "#bfdbfe"}`,
+                    }}
+                  >
+                    {primaryActiveMission.status === "picked_up" ? "🚗 On Route to Shelter" : "📍 Heading to Donor"}
+                  </span>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: "0.75rem", background: "#ffffff", padding: "1rem", borderRadius: "10px", border: "1px solid #fed7aa" }}>
+                  <div>
+                    <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748b" }}>1. PICKUP POINT (Donor)</div>
+                    <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#0f172a", marginTop: "2px" }}>
+                      {donationDetails[primaryActiveMission.donation_id]?.donor?.name || "Registered Food Donor"}
+                    </div>
+                    {donationDetails[primaryActiveMission.donation_id]?.donor?.phone && (
+                      <a href={`tel:${donationDetails[primaryActiveMission.donation_id]?.donor?.phone}`} style={{ fontSize: "0.8rem", color: "#0284c7", textDecoration: "none", fontWeight: 600 }}>
+                        📞 {donationDetails[primaryActiveMission.donation_id]?.donor?.phone}
+                      </a>
+                    )}
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: "0.75rem", fontWeight: 700, color: "#64748b" }}>2. DROPOFF POINT (Shelter)</div>
+                    <div style={{ fontSize: "0.88rem", fontWeight: 700, color: "#0f172a", marginTop: "2px" }}>
+                      {primaryActiveMission.ngo?.org_name || primaryActiveMission.ngo?.name || "Local Community Shelter"}
+                    </div>
+                    {primaryActiveMission.ngo?.phone && (
+                      <a href={`tel:${primaryActiveMission.ngo?.phone}`} style={{ fontSize: "0.8rem", color: "#0284c7", textDecoration: "none", fontWeight: 600 }}>
+                        📞 {primaryActiveMission.ngo?.phone}
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  <button
+                    onClick={() => setActiveTab("my_deliveries")}
+                    style={{
+                      background: "#d97706",
+                      color: "#ffffff",
+                      border: "none",
+                      borderRadius: "8px",
+                      padding: "8px 16px",
+                      fontWeight: 700,
+                      fontSize: "0.85rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Open Live Delivery Cockpit & Camera →
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: "2.5rem 1rem", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🚗</div>
+                <h5 style={{ margin: "0 0 0.25rem", fontSize: "1rem", color: "#334155", fontWeight: 700 }}>No Active Delivery In Progress</h5>
+                <p style={{ margin: "0 0 1rem", fontSize: "0.82rem", color: "#64748b" }}>
+                  Explore the open missions pool to claim a delivery and bring fresh meals to hungry families.
+                </p>
+                <button
+                  onClick={() => setActiveTab("available")}
+                  style={{
+                    background: "#d97706",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "8px 18px",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  🚗 View Available Rescue Missions ({availableClaims.length})
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Courier Safety & Thermal Bag Standards */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
+            <div style={{ background: "#ffffff", borderRadius: "14px", padding: "1.25rem", border: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🧊</div>
+              <h5 style={{ margin: "0 0 0.35rem", fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>
+                Temperature Protection
+              </h5>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: 1.5 }}>
+                Carry thermal insulated delivery bags or clean containers to keep cooked meals warm or chilled during travel.
+              </p>
+            </div>
+
+            <div style={{ background: "#ffffff", borderRadius: "14px", padding: "1.25rem", border: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>⚡</div>
+              <h5 style={{ margin: "0 0 0.35rem", fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>
+                Direct Route Transit
+              </h5>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: 1.5 }}>
+                Head straight from the donor to the shelter dropoff within 30-45 minutes to guarantee peak nutrition and taste.
+              </p>
+            </div>
+
+            <div style={{ background: "#ffffff", borderRadius: "14px", padding: "1.25rem", border: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>📸</div>
+              <h5 style={{ margin: "0 0 0.35rem", fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>
+                Dropoff Photo Verification
+              </h5>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: 1.5 }}>
+                Snap a clear confirmation photo of the food batch handed over at the shelter to complete your mission and earn courier points!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* TAB 1: AVAILABLE DELIVERIES */}
       {activeTab === "available" && (
         <div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <button
+              onClick={() => setActiveTab("overview")}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#d97706",
+                fontWeight: 700,
+                fontSize: "0.88rem",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: 0,
+              }}
+            >
+              ← Back to Overview Homepage
+            </button>
+            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Available Surplus Delivery Dispatches</span>
+          </div>
+
           {availableClaims.length === 0 ? (
             <div style={styles.empty}>
               <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🌿</div>

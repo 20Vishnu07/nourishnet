@@ -109,7 +109,7 @@ export default function DonorDashboard() {
     }
   };
   const [myDonations, setMyDonations] = useState<Donation[]>([]);
-  const [activeTab, setActiveTab] = useState<"donations" | "create">("donations");
+  const [activeTab, setActiveTab] = useState<"overview" | "create" | "donations">("overview");
   const [statusFilter, setStatusFilter] = useState<"all" | "available" | "claimed" | "delivered">("all");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -198,7 +198,7 @@ export default function DonorDashboard() {
       setFoodType("");
       setQuantity("");
       setFoodPhoto(null);
-      setActiveTab("donations");
+      setActiveTab("overview");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create donation");
     } finally {
@@ -265,7 +265,7 @@ export default function DonorDashboard() {
             {isConnected ? `🟢 Live Network Active` : isFallbackMode ? `🟡 Syncing via Polling` : `⚪ Connecting...`}
           </span>
           <button
-            onClick={() => setActiveTab(activeTab === "create" ? "donations" : "create")}
+            onClick={() => setActiveTab(activeTab === "create" ? "overview" : "create")}
             style={{
               background: activeTab === "create" ? "#f1f5f9" : "#059669",
               color: activeTab === "create" ? "#0f172a" : "#ffffff",
@@ -281,7 +281,7 @@ export default function DonorDashboard() {
               gap: "6px",
             }}
           >
-            {activeTab === "create" ? "📋 View My Donations" : "➕ Post Surplus Food"}
+            {activeTab === "create" ? "← Back to Homepage" : "➕ Donate Surplus Food"}
           </button>
         </div>
       </div>
@@ -351,37 +351,28 @@ export default function DonorDashboard() {
           gap: "8px",
           borderBottom: "2px solid #e2e8f0",
           paddingBottom: "4px",
+          overflowX: "auto",
         }}
       >
         <button
-          onClick={() => setActiveTab("donations")}
+          onClick={() => setActiveTab("overview")}
           style={{
             background: "none",
             border: "none",
-            borderBottom: activeTab === "donations" ? "3px solid #059669" : "3px solid transparent",
+            borderBottom: activeTab === "overview" ? "3px solid #059669" : "3px solid transparent",
             padding: "10px 18px",
             fontSize: "0.95rem",
             fontWeight: 700,
-            color: activeTab === "donations" ? "#059669" : "#64748b",
+            color: activeTab === "overview" ? "#059669" : "#64748b",
             cursor: "pointer",
             display: "inline-flex",
             alignItems: "center",
             gap: "8px",
             transition: "all 0.15s ease",
+            whiteSpace: "nowrap",
           }}
         >
-          <span>📋 My Donations & Tracking</span>
-          <span
-            style={{
-              fontSize: "0.75rem",
-              background: activeTab === "donations" ? "#ecfdf5" : "#f1f5f9",
-              color: activeTab === "donations" ? "#059669" : "#64748b",
-              padding: "2px 8px",
-              borderRadius: "12px",
-            }}
-          >
-            {myDonations.length}
-          </span>
+          <span>🏠 Overview Homepage</span>
         </button>
 
         <button
@@ -399,11 +390,266 @@ export default function DonorDashboard() {
             alignItems: "center",
             gap: "8px",
             transition: "all 0.15s ease",
+            whiteSpace: "nowrap",
           }}
         >
-          <span>➕ Post Surplus Food Donation</span>
+          <span>➕ Post Surplus Food</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("donations")}
+          style={{
+            background: "none",
+            border: "none",
+            borderBottom: activeTab === "donations" ? "3px solid #059669" : "3px solid transparent",
+            padding: "10px 18px",
+            fontSize: "0.95rem",
+            fontWeight: 700,
+            color: activeTab === "donations" ? "#059669" : "#64748b",
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "8px",
+            transition: "all 0.15s ease",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span>📋 My Donation Listings</span>
+          <span
+            style={{
+              fontSize: "0.75rem",
+              background: activeTab === "donations" ? "#ecfdf5" : "#f1f5f9",
+              color: activeTab === "donations" ? "#059669" : "#64748b",
+              padding: "2px 8px",
+              borderRadius: "12px",
+            }}
+          >
+            {myDonations.length}
+          </span>
         </button>
       </div>
+
+      {/* TAB 0: HOMEPAGE OVERVIEW */}
+      {activeTab === "overview" && (
+        <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+          {/* Welcome Action Hero Banner */}
+          <div
+            style={{
+              background: "linear-gradient(135deg, #059669 0%, #047857 100%)",
+              borderRadius: "16px",
+              padding: "2rem",
+              color: "#ffffff",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              flexWrap: "wrap",
+              gap: "1.25rem",
+              boxShadow: "0 4px 14px rgba(5, 150, 105, 0.25)",
+            }}
+          >
+            <div style={{ maxWidth: "600px" }}>
+              <div style={{ display: "inline-block", background: "rgba(255,255,255,0.2)", padding: "3px 10px", borderRadius: "12px", fontSize: "0.8rem", fontWeight: 700, marginBottom: "8px" }}>
+                🌱 Food Donor Command Center
+              </div>
+              <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.5rem", fontWeight: 800 }}>
+                Welcome, {appUser?.org_name || appUser?.name}! 🍲
+              </h3>
+              <p style={{ margin: 0, fontSize: "0.92rem", opacity: 0.95, lineHeight: 1.5 }}>
+                Your kitchen is actively connected to the NourishNet redistribution grid. Post your fresh surplus food batches and local shelters or volunteer couriers will pick them up before expiry.
+              </p>
+            </div>
+            <button
+              onClick={() => setActiveTab("create")}
+              style={{
+                background: "#ffffff",
+                color: "#047857",
+                border: "none",
+                borderRadius: "12px",
+                padding: "12px 24px",
+                fontWeight: 800,
+                fontSize: "1rem",
+                cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "8px",
+                transition: "transform 0.15s ease",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.03)")}
+              onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+            >
+              <span>➕ Donate Surplus Food</span>
+              <span>→</span>
+            </button>
+          </div>
+
+          {/* Active Listings & Information Board */}
+          <div style={{ background: "#ffffff", borderRadius: "16px", padding: "1.5rem", border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem", flexWrap: "wrap", gap: "0.5rem" }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 800, color: "#0f172a" }}>
+                  📦 Active Food Listings & Real-Time Status
+                </h4>
+                <p style={{ margin: "2px 0 0", fontSize: "0.82rem", color: "#64748b" }}>
+                  Live overview of meals currently published, claimed, or being transported.
+                </p>
+              </div>
+              {myDonations.length > 0 && (
+                <button
+                  onClick={() => setActiveTab("donations")}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#059669",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                    padding: 0,
+                  }}
+                >
+                  View All ({myDonations.length}) →
+                </button>
+              )}
+            </div>
+
+            {myDonations.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "2.5rem 1rem", background: "#f8fafc", borderRadius: "12px", border: "1px dashed #cbd5e1" }}>
+                <div style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>🥣</div>
+                <h5 style={{ margin: "0 0 0.25rem", fontSize: "1rem", color: "#334155", fontWeight: 700 }}>No Active Donations Posted Yet</h5>
+                <p style={{ margin: "0 0 1rem", fontSize: "0.82rem", color: "#64748b" }}>
+                  Have surplus bread, cooked lunch, or fresh produce today? Post a batch to connect with local shelters immediately.
+                </p>
+                <button
+                  onClick={() => setActiveTab("create")}
+                  style={{
+                    background: "#059669",
+                    color: "#ffffff",
+                    border: "none",
+                    borderRadius: "8px",
+                    padding: "8px 18px",
+                    fontWeight: 700,
+                    fontSize: "0.85rem",
+                    cursor: "pointer",
+                  }}
+                >
+                  ➕ Post Your First Food Donation
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: "1rem" }}>
+                {myDonations.slice(0, 4).map((d) => (
+                  <div
+                    key={d.id}
+                    style={{
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "12px",
+                      padding: "1rem",
+                      background: "#f8fafc",
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "space-between",
+                      gap: "0.75rem",
+                    }}
+                  >
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "6px" }}>
+                        <span style={{ fontWeight: 800, fontSize: "0.98rem", color: "#0f172a" }}>
+                          {d.food_type}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: "0.72rem",
+                            fontWeight: 700,
+                            padding: "3px 8px",
+                            borderRadius: "12px",
+                            background:
+                              d.status === "available"
+                                ? "#ecfdf5"
+                                : d.status === "claimed"
+                                ? "#eff6ff"
+                                : d.status === "picked_up"
+                                ? "#fffbeb"
+                                : "#f0fdf4",
+                            color:
+                              d.status === "available"
+                                ? "#065f46"
+                                : d.status === "claimed"
+                                ? "#1e40af"
+                                : d.status === "picked_up"
+                                ? "#b45309"
+                                : "#166534",
+                            border: `1px solid ${
+                              d.status === "available"
+                                ? "#a7f3d0"
+                                : d.status === "claimed"
+                                ? "#bfdbfe"
+                                : d.status === "picked_up"
+                                ? "#fde68a"
+                                : "#bbf7d0"
+                            }`,
+                            textTransform: "capitalize",
+                          }}
+                        >
+                          {d.status === "available"
+                            ? "🟢 Available"
+                            : d.status === "claimed"
+                            ? "🔵 Claimed by Shelter"
+                            : d.status === "picked_up"
+                            ? "🚗 In Transit"
+                            : "✅ Delivered"}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: "0.85rem", color: "#475569" }}>
+                        <strong>Quantity:</strong> {d.quantity} {d.unit}
+                      </div>
+                      <div style={{ fontSize: "0.78rem", color: "#64748b", marginTop: "4px" }}>
+                        Expires: {new Date(d.expiry_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: "0.75rem", color: "#94a3b8", borderTop: "1px solid #e2e8f0", paddingTop: "6px" }}>
+                      Posted: {new Date(d.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Safety, Packaging & Guidelines */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: "1rem" }}>
+            <div style={{ background: "#ffffff", borderRadius: "14px", padding: "1.25rem", border: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🌡️</div>
+              <h5 style={{ margin: "0 0 0.35rem", fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>
+                Temperature & Freshness Control
+              </h5>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: 1.5 }}>
+                Keep prepared hot food above 60°C or chilled below 5°C before courier handover to maintain maximum nutrition and safety.
+              </p>
+            </div>
+
+            <div style={{ background: "#ffffff", borderRadius: "14px", padding: "1.25rem", border: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🍱</div>
+              <h5 style={{ margin: "0 0 0.35rem", fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>
+                Clean Food-Grade Packaging
+              </h5>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: 1.5 }}>
+                Pack meals in sealed, clean containers or boxes with food type and prep time marked to make distribution rapid for shelters.
+              </p>
+            </div>
+
+            <div style={{ background: "#ffffff", borderRadius: "14px", padding: "1.25rem", border: "1px solid #e2e8f0" }}>
+              <div style={{ fontSize: "1.5rem", marginBottom: "0.5rem" }}>🤝</div>
+              <h5 style={{ margin: "0 0 0.35rem", fontSize: "0.95rem", fontWeight: 700, color: "#0f172a" }}>
+                Direct Courier Coordination
+              </h5>
+              <p style={{ margin: 0, fontSize: "0.8rem", color: "#64748b", lineHeight: 1.5 }}>
+                When a shelter claims your food, volunteer couriers receive pickup directions directly to your designated door.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* TAB 1: MY DONATIONS & TRACKING */}
       {activeTab === "donations" && (
@@ -607,6 +853,27 @@ export default function DonorDashboard() {
       {/* TAB 2: POST SURPLUS FOOD */}
       {activeTab === "create" && (
         <div style={{ background: "#ffffff", borderRadius: "16px", padding: "1.75rem", border: "1px solid #e2e8f0", boxShadow: "0 2px 8px rgba(0,0,0,0.04)" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
+            <button
+              onClick={() => setActiveTab("overview")}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#059669",
+                fontWeight: 700,
+                fontSize: "0.88rem",
+                cursor: "pointer",
+                display: "inline-flex",
+                alignItems: "center",
+                gap: "6px",
+                padding: 0,
+              }}
+            >
+              ← Back to Overview Homepage
+            </button>
+            <span style={{ fontSize: "0.8rem", color: "#64748b" }}>Step 1 of 1: Batch Details & Location</span>
+          </div>
+
           <h3 style={{ margin: "0 0 0.5rem", fontSize: "1.25rem", color: "#0f172a", fontWeight: 800 }}>
             ➕ Post Surplus Food for Redistribution
           </h3>

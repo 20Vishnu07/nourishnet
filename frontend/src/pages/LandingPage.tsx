@@ -35,6 +35,7 @@ export default function LandingPage() {
   const [newPassword, setNewPassword] = useState("");
   const [resetStep, setResetStep] = useState<1 | 2>(1);
   const [isResetSubmitting, setIsResetSubmitting] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const displayError = localError || error;
 
@@ -149,6 +150,7 @@ export default function LandingPage() {
       return;
     }
 
+    setIsRegistering(true);
     try {
       await register({
         name: name.trim(),
@@ -162,12 +164,12 @@ export default function LandingPage() {
       }, true);
 
       sessionStorage.setItem("account_created", "true");
+      setIsAuthOpen(false);
       try {
         window.alert("Account Created Successfully");
       } catch {}
 
       // Direct auto-login to registered account portal!
-      setIsAuthOpen(false);
       navigate("/dashboard", { replace: true });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed";
@@ -179,6 +181,8 @@ export default function LandingPage() {
       try {
         window.alert(errMsg);
       } catch {}
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -1299,15 +1303,15 @@ export default function LandingPage() {
                   type="submit"
                   style={{
                     ...landingStyles.modalSubmitBtn,
-                    opacity: isLoading ? 0.8 : 1,
+                    opacity: (isLoading || isRegistering) ? 0.8 : 1,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
                     gap: "8px",
                   }}
-                  disabled={isLoading}
+                  disabled={isLoading || isRegistering}
                 >
-                  {isLoading && (
+                  {(isLoading || isRegistering) && (
                     <span
                       style={{
                         width: "16px",
@@ -1321,8 +1325,8 @@ export default function LandingPage() {
                     />
                   )}
                   <span>
-                    {isLoading
-                      ? "Creating Account..."
+                    {isRegistering || isLoading
+                      ? "⚡ Creating Account..."
                       : `Register as ${selectedRole === "donor" ? "Donor" : selectedRole === "ngo" ? "NGO" : "Volunteer"}`}
                   </span>
                 </button>

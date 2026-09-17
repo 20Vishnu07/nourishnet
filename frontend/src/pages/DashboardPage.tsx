@@ -42,26 +42,32 @@ export default function DashboardPage() {
 
   const roleTheme = {
     donor: {
+      pageBg: "#f4fbf7",
+      headerBorder: "#059669",
       bg: "#ecfdf5",
       color: "#059669",
       border: "rgba(5, 150, 105, 0.25)",
-      gradient: "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+      gradient: "linear-gradient(135deg, #059669 0%, #047857 100%)",
       portalTitle: "Food Donor Portal",
       portalDesc: "Publish surplus food, coordinate pickups, and track your environmental & community impact in real-time.",
     },
     ngo: {
+      pageBg: "#f0f7fc",
+      headerBorder: "#0284c7",
       bg: "#f0f9ff",
       color: "#0284c7",
       border: "rgba(2, 132, 199, 0.25)",
-      gradient: "linear-gradient(135deg, #0284c7 0%, #38bdf8 100%)",
+      gradient: "linear-gradient(135deg, #0284c7 0%, #0369a1 100%)",
       portalTitle: "NGO & Shelter Portal",
       portalDesc: "Scan local surplus food, claim meals for your shelter, and coordinate volunteer couriers.",
     },
     volunteer: {
+      pageBg: "#fffdf5",
+      headerBorder: "#d97706",
       bg: "#fffbeb",
       color: "#d97706",
       border: "rgba(217, 119, 6, 0.25)",
-      gradient: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
+      gradient: "linear-gradient(135deg, #d97706 0%, #b45309 100%)",
       portalTitle: "Volunteer Courier Portal",
       portalDesc: "Accept rescue missions, navigate pickup-to-shelter routes, and deliver vital food to people in need.",
     },
@@ -70,8 +76,8 @@ export default function DashboardPage() {
   const currentTheme = roleTheme[activeRole] ?? roleTheme.donor;
 
   return (
-    <div style={styles.container}>
-      <header style={styles.header}>
+    <div style={{ ...styles.container, background: currentTheme.pageBg }}>
+      <header style={{ ...styles.header, borderBottom: `2.5px solid ${currentTheme.headerBorder}` }}>
         <div style={styles.headerContent}>
           <Link to="/" style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: "10px" }}>
             <span style={{ fontSize: "1.5rem" }}>🌱</span>

@@ -5,6 +5,7 @@ import { apiFetch } from "../../config/api";
 import { useGeolocation } from "../../hooks/useGeolocation";
 import LocationPicker from "../../components/Map/LocationPicker";
 import { useRealtimeUpdates } from "../../hooks/useRealtimeUpdates";
+import { blastPaperConfetti } from "../../utils/confetti";
 
 interface Donation {
   id: number;
@@ -115,6 +116,7 @@ export default function DonorDashboard() {
   const [success, setSuccess] = useState<string | null>(null);
   const [liveNotice, setLiveNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const loadMyDonations = useCallback(async () => {
     try {
@@ -199,6 +201,13 @@ export default function DonorDashboard() {
       setQuantity("");
       setFoodPhoto(null);
       setActiveTab("overview");
+
+      // Colorful blasting papers confetti celebration for food donor
+      blastPaperConfetti({
+        particleCount: 220,
+        colors: ["#10b981", "#059669", "#34d399", "#f59e0b", "#3b82f6", "#ef4444", "#ec4899", "#8b5cf6"],
+      });
+      setShowCelebration(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create donation");
     } finally {
@@ -307,6 +316,52 @@ export default function DonorDashboard() {
             style={{ background: "none", border: "none", cursor: "pointer", color: "#1e40af", fontWeight: 700 }}
           >
             ✕
+          </button>
+        </div>
+      )}
+
+      {showCelebration && (
+        <div
+          style={{
+            background: "linear-gradient(135deg, #059669 0%, #10b981 100%)",
+            color: "#ffffff",
+            padding: "1.25rem 1.5rem",
+            borderRadius: "14px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            boxShadow: "0 8px 25px rgba(16, 185, 129, 0.35)",
+            border: "2px solid #a7f3d0",
+            marginBottom: "0.75rem",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <span style={{ fontSize: "2.4rem" }}>🎊</span>
+            <div>
+              <h4 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800 }}>
+                🎉 Surplus Food Donated Successfully!
+              </h4>
+              <p style={{ margin: "4px 0 0", fontSize: "0.9rem", opacity: 0.95 }}>
+                Local shelters and volunteer couriers have been alerted on their live surplus radar. Thank you for reducing food waste and feeding families!
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowCelebration(false)}
+            style={{
+              background: "rgba(255,255,255,0.25)",
+              border: "none",
+              color: "#ffffff",
+              borderRadius: "8px",
+              padding: "7px 14px",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: "0.85rem",
+            }}
+          >
+            ✕ Dismiss
           </button>
         </div>
       )}

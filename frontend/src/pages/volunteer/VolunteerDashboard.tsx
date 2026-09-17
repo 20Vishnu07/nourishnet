@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { apiFetch } from "../../config/api";
 import { useGeolocation } from "../../hooks/useGeolocation";
 import { useRealtimeUpdates } from "../../hooks/useRealtimeUpdates";
+import { blastPaperConfetti } from "../../utils/confetti";
 
 interface Donation {
   id: number;
@@ -70,6 +71,7 @@ export default function VolunteerDashboard() {
   const [isSharingLocation, setIsSharingLocation] = useState(true);
   const [deliveryPhotoMap, setDeliveryPhotoMap] = useState<Record<number, string>>({});
   const [simStep, setSimStep] = useState(0);
+  const [showMissionCelebration, setShowMissionCelebration] = useState(false);
 
   const locationWatchIdRef = useRef<number | null>(null);
 
@@ -253,6 +255,13 @@ export default function VolunteerDashboard() {
 
       // Immediately post initial location
       postLocation(claimId, currentLat, currentLng);
+
+      // Colorful blasting papers confetti celebration for accepting delivery mission
+      blastPaperConfetti({
+        particleCount: 220,
+        colors: ["#f59e0b", "#d97706", "#fbbf24", "#10b981", "#3b82f6", "#ef4444", "#ec4899", "#8b5cf6"],
+      });
+      setShowMissionCelebration(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to accept delivery");
     }
@@ -422,6 +431,52 @@ export default function VolunteerDashboard() {
             style={{ background: "none", border: "none", cursor: "pointer", color: "#1e40af", fontWeight: 700 }}
           >
             ✕
+          </button>
+        </div>
+      )}
+
+      {showMissionCelebration && (
+        <div
+          style={{
+            background: "linear-gradient(135deg, #d97706 0%, #f59e0b 100%)",
+            color: "#ffffff",
+            padding: "1.25rem 1.5rem",
+            borderRadius: "14px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            boxShadow: "0 8px 25px rgba(217, 119, 6, 0.35)",
+            border: "2px solid #fde68a",
+            marginBottom: "0.75rem",
+            flexWrap: "wrap",
+            gap: "12px",
+          }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+            <span style={{ fontSize: "2.4rem" }}>🎉</span>
+            <div>
+              <h4 style={{ margin: 0, fontSize: "1.2rem", fontWeight: 800 }}>
+                🎊 Delivery Mission Accepted! You Are A Hero!
+              </h4>
+              <p style={{ margin: "4px 0 0", fontSize: "0.9rem", opacity: 0.95 }}>
+                Follow the live route and step-by-step directions below to pick up the food and deliver it to the shelter.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowMissionCelebration(false)}
+            style={{
+              background: "rgba(255,255,255,0.25)",
+              border: "none",
+              color: "#ffffff",
+              borderRadius: "8px",
+              padding: "7px 14px",
+              cursor: "pointer",
+              fontWeight: 700,
+              fontSize: "0.85rem",
+            }}
+          >
+            ✕ Dismiss
           </button>
         </div>
       )}

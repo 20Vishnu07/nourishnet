@@ -338,23 +338,49 @@ export default function LandingPage() {
           <div style={landingStyles.navRight}>
             <LanguageSwitcher />
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "nowrap" }}>
-              {appUser ? (
+              {/* Always provide Sign In & Sign Up buttons */}
+              <button
+                onClick={() => openSignIn()}
+                style={{
+                  ...landingStyles.navSignInBtn,
+                  backgroundColor: "#ffffff",
+                  color: colors.primary,
+                  border: `1.5px solid ${colors.primary}`,
+                }}
+              >
+                {t("auth.signIn")}
+              </button>
+              <button
+                onClick={() => openSignUp()}
+                style={{
+                  ...landingStyles.navSignInBtn,
+                  backgroundColor: colors.primary,
+                  color: "#ffffff",
+                  border: `1.5px solid ${colors.primary}`,
+                }}
+              >
+                {t("auth.signUp")}
+              </button>
+
+              {/* If already logged in, also offer direct portal access and logout */}
+              {appUser && (
                 <>
                   <button
                     onClick={() => navigate("/dashboard")}
                     style={{
                       ...landingStyles.navSignInBtn,
-                      backgroundColor: colors.primary,
+                      backgroundColor: appUser.role === "donor" ? "#059669" : appUser.role === "ngo" ? "#0284c7" : "#d97706",
                       color: "#ffffff",
-                      border: `1.5px solid ${colors.primary}`,
+                      border: "none",
                       display: "flex",
                       alignItems: "center",
                       gap: "6px",
                       fontWeight: 700,
                     }}
+                    title="Go to your active portal dashboard"
                   >
                     <span>{appUser.role === "donor" ? "🍲" : appUser.role === "ngo" ? "🏢" : "🚗"}</span>
-                    <span>My {appUser.role === "donor" ? "Donor" : appUser.role === "ngo" ? "NGO" : "Volunteer"} Portal</span>
+                    <span>My {appUser.role === "donor" ? "Donor" : appUser.role === "ngo" ? "NGO" : "Volunteer"} Portal →</span>
                   </button>
                   <button
                     onClick={logout}
@@ -367,31 +393,6 @@ export default function LandingPage() {
                     title="Sign out of current account"
                   >
                     {t("common.logout")}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => openSignIn()}
-                    style={{
-                      ...landingStyles.navSignInBtn,
-                      backgroundColor: "#ffffff",
-                      color: colors.primary,
-                      border: `1.5px solid ${colors.primary}`,
-                    }}
-                  >
-                    {t("auth.signIn")}
-                  </button>
-                  <button
-                    onClick={() => openSignUp()}
-                    style={{
-                      ...landingStyles.navSignInBtn,
-                      backgroundColor: colors.primary,
-                      color: "#ffffff",
-                      border: `1.5px solid ${colors.primary}`,
-                    }}
-                  >
-                    {t("auth.signUp")}
                   </button>
                 </>
               )}
@@ -418,26 +419,161 @@ export default function LandingPage() {
               {t("landing.heroSubtitle")}
             </p>
 
-            {/* Role Action CTAs */}
-            <div style={landingStyles.heroActionGroup}>
-              <button
-                onClick={() => openAuthWithRole("donor", "signup")}
-                style={landingStyles.heroBtnDonor}
-              >
-                🍲 {t("landing.donateFoodBtn")}
-              </button>
-              <button
-                onClick={() => openAuthWithRole("ngo", "signup")}
-                style={landingStyles.heroBtnNgo}
-              >
-                🏢 {t("landing.claimFoodBtn")}
-              </button>
-              <button
-                onClick={() => openAuthWithRole("volunteer", "signup")}
-                style={landingStyles.heroBtnVolunteer}
-              >
-                🚗 {t("landing.volunteerBtn")}
-              </button>
+            {/* Dedicated Role Portals: Sign Up & Sign In for EACH role */}
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+              gap: "10px",
+              marginTop: "1.25rem",
+              marginBottom: "1rem",
+              width: "100%",
+            }}>
+              {/* Donor Portal Box */}
+              <div style={{
+                background: "#f0fdf4",
+                border: "1.5px solid #86efac",
+                borderRadius: "12px",
+                padding: "10px 12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 800, color: "#166534", fontSize: "0.9rem" }}>
+                  <span>🍲</span> Food Donor
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button
+                    onClick={() => openAuthWithRole("donor", "signup")}
+                    style={{
+                      flex: 1,
+                      background: "#059669",
+                      color: "#ffffff",
+                      border: "none",
+                      padding: "7px 6px",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      fontSize: "0.78rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Sign Up
+                  </button>
+                  <button
+                    onClick={() => openAuthWithRole("donor", "signin")}
+                    style={{
+                      flex: 1,
+                      background: "#ffffff",
+                      color: "#059669",
+                      border: "1.5px solid #059669",
+                      padding: "7px 6px",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      fontSize: "0.78rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Sign In
+                  </button>
+                </div>
+              </div>
+
+              {/* NGO Portal Box */}
+              <div style={{
+                background: "#f0f9ff",
+                border: "1.5px solid #7dd3fc",
+                borderRadius: "12px",
+                padding: "10px 12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 800, color: "#0369a1", fontSize: "0.9rem" }}>
+                  <span>🏢</span> NGO / Shelter
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button
+                    onClick={() => openAuthWithRole("ngo", "signup")}
+                    style={{
+                      flex: 1,
+                      background: "#0284c7",
+                      color: "#ffffff",
+                      border: "none",
+                      padding: "7px 6px",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      fontSize: "0.78rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Sign Up
+                  </button>
+                  <button
+                    onClick={() => openAuthWithRole("ngo", "signin")}
+                    style={{
+                      flex: 1,
+                      background: "#ffffff",
+                      color: "#0284c7",
+                      border: "1.5px solid #0284c7",
+                      padding: "7px 6px",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      fontSize: "0.78rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Sign In
+                  </button>
+                </div>
+              </div>
+
+              {/* Volunteer Portal Box */}
+              <div style={{
+                background: "#fffbeb",
+                border: "1.5px solid #fcd34d",
+                borderRadius: "12px",
+                padding: "10px 12px",
+                display: "flex",
+                flexDirection: "column",
+                gap: "8px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px", fontWeight: 800, color: "#b45309", fontSize: "0.9rem" }}>
+                  <span>🚗</span> Volunteer Courier
+                </div>
+                <div style={{ display: "flex", gap: "6px" }}>
+                  <button
+                    onClick={() => openAuthWithRole("volunteer", "signup")}
+                    style={{
+                      flex: 1,
+                      background: "#d97706",
+                      color: "#ffffff",
+                      border: "none",
+                      padding: "7px 6px",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      fontSize: "0.78rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Sign Up
+                  </button>
+                  <button
+                    onClick={() => openAuthWithRole("volunteer", "signin")}
+                    style={{
+                      flex: 1,
+                      background: "#ffffff",
+                      color: "#d97706",
+                      border: "1.5px solid #d97706",
+                      padding: "7px 6px",
+                      borderRadius: "8px",
+                      fontWeight: 700,
+                      fontSize: "0.78rem",
+                      cursor: "pointer",
+                    }}
+                  >
+                    Sign In
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* Quick Demo Preview Bar */}
@@ -554,30 +690,37 @@ export default function LandingPage() {
                 <li>✓ AI Machine Learning Surplus Forecast</li>
                 <li>✓ Map-based Geolocation Pinning</li>
               </ul>
-              <button
-                onClick={() => openAuthWithRole("donor", "signup")}
-                style={landingStyles.roleActionBtnDonor}
-              >
-                {t("landing.donorCardAction")} →
-              </button>
-              <button
-                type="button"
-                onClick={() => openSignIn("donor")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: colors.primary,
-                  fontSize: "0.82rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  marginTop: "8px",
-                  display: "block",
-                  textAlign: "center",
-                  width: "100%",
-                }}
-              >
-                Already registered? Sign in as Donor →
-              </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "1rem" }}>
+                <button
+                  onClick={() => openAuthWithRole("donor", "signup")}
+                  style={{
+                    ...landingStyles.roleActionBtnDonor,
+                    margin: 0,
+                    width: "100%",
+                  }}
+                >
+                  Sign Up as Food Donor →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openSignIn("donor")}
+                  style={{
+                    backgroundColor: "#ffffff",
+                    color: colors.primary,
+                    border: `1.5px solid ${colors.primary}`,
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    fontWeight: 700,
+                    fontSize: "0.88rem",
+                    cursor: "pointer",
+                    textAlign: "center",
+                    width: "100%",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  Sign In as Food Donor
+                </button>
+              </div>
             </div>
           </div>
 
@@ -601,30 +744,37 @@ export default function LandingPage() {
                 <li>✓ Instant One-Click Claims</li>
                 <li>✓ Automated Volunteer Route Matching</li>
               </ul>
-              <button
-                onClick={() => openAuthWithRole("ngo", "signup")}
-                style={landingStyles.roleActionBtnNgo}
-              >
-                {t("landing.ngoCardAction")} →
-              </button>
-              <button
-                type="button"
-                onClick={() => openSignIn("ngo")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: colors.ngoAccent,
-                  fontSize: "0.82rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  marginTop: "8px",
-                  display: "block",
-                  textAlign: "center",
-                  width: "100%",
-                }}
-              >
-                Already registered? Sign in as NGO →
-              </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "1rem" }}>
+                <button
+                  onClick={() => openAuthWithRole("ngo", "signup")}
+                  style={{
+                    ...landingStyles.roleActionBtnNgo,
+                    margin: 0,
+                    width: "100%",
+                  }}
+                >
+                  Sign Up as NGO / Shelter →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openSignIn("ngo")}
+                  style={{
+                    backgroundColor: "#ffffff",
+                    color: colors.ngoAccent,
+                    border: `1.5px solid ${colors.ngoAccent}`,
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    fontWeight: 700,
+                    fontSize: "0.88rem",
+                    cursor: "pointer",
+                    textAlign: "center",
+                    width: "100%",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  Sign In as NGO / Shelter
+                </button>
+              </div>
             </div>
           </div>
 
@@ -648,30 +798,37 @@ export default function LandingPage() {
                 <li>✓ Live Pickup GPS & Delivery Confirmation</li>
                 <li>✓ Zero Food Waste Community Hero</li>
               </ul>
-              <button
-                onClick={() => openAuthWithRole("volunteer", "signup")}
-                style={landingStyles.roleActionBtnVolunteer}
-              >
-                {t("landing.volunteerCardAction")} →
-              </button>
-              <button
-                type="button"
-                onClick={() => openSignIn("volunteer")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: colors.accentHover,
-                  fontSize: "0.82rem",
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  marginTop: "8px",
-                  display: "block",
-                  textAlign: "center",
-                  width: "100%",
-                }}
-              >
-                Already registered? Sign in as Volunteer →
-              </button>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "1rem" }}>
+                <button
+                  onClick={() => openAuthWithRole("volunteer", "signup")}
+                  style={{
+                    ...landingStyles.roleActionBtnVolunteer,
+                    margin: 0,
+                    width: "100%",
+                  }}
+                >
+                  Sign Up as Volunteer Courier →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openSignIn("volunteer")}
+                  style={{
+                    backgroundColor: "#ffffff",
+                    color: colors.accentHover,
+                    border: `1.5px solid ${colors.accentHover}`,
+                    padding: "10px 16px",
+                    borderRadius: "10px",
+                    fontWeight: 700,
+                    fontSize: "0.88rem",
+                    cursor: "pointer",
+                    textAlign: "center",
+                    width: "100%",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  Sign In as Volunteer Courier
+                </button>
+              </div>
             </div>
           </div>
         </div>

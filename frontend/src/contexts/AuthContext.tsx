@@ -38,6 +38,63 @@ export interface RegisterPayload {
   language_pref?: string;
 }
 
+export interface SavedAccount {
+  email: string;
+  name: string;
+  role: UserRole;
+  org_name?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  language_pref?: string;
+  saved_at: string;
+}
+
+const SAVED_ACCOUNTS_KEY = "nourishnet_saved_accounts";
+
+export function getLocalSavedAccounts(): SavedAccount[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(SAVED_ACCOUNTS_KEY);
+    return raw ? (JSON.parse(raw) as SavedAccount[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveLocalAccount(account: Omit<SavedAccount, "saved_at">) {
+  if (typeof window === "undefined") return;
+  try {
+    const current = getLocalSavedAccounts();
+    const filtered = current.filter(
+      (a) => a.email.toLowerCase() !== account.email.toLowerCase().trim()
+    );
+    const updated: SavedAccount[] = [
+      {
+        ...account,
+        email: account.email.toLowerCase().trim(),
+        saved_at: new Date().toISOString(),
+      },
+      ...filtered,
+    ].slice(0, 10);
+    localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(updated));
+  } catch {
+    /* ignore */
+  }
+}
+
+export function removeLocalAccount(email: string) {
+  if (typeof window === "undefined") return;
+  try {
+    const current = getLocalSavedAccounts();
+    const filtered = current.filter(
+      (a) => a.email.toLowerCase() !== email.toLowerCase().trim()
+    );
+    localStorage.setItem(SAVED_ACCOUNTS_KEY, JSON.stringify(filtered));
+  } catch {
+    /* ignore */
+  }
+}
+
 interface AuthState {
   firebaseUser: FirebaseUser | null;
   appUser: AppUser | null;
@@ -46,6 +103,7 @@ interface AuthState {
   isInitialLoading: boolean;
   isNewUser: boolean;
   error: string | null;
+  savedAccounts: SavedAccount[];
 }
 
 interface AuthContextType extends AuthState {
@@ -61,6 +119,8 @@ interface AuthContextType extends AuthState {
   updateLanguagePref: (lang: string) => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
+  removeSavedAccount: (email: string) => void;
+  reloadSavedAccounts: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -99,8 +159,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isInitialLoading: false,
       isNewUser: false,
       error: null,
+      savedAccounts: getLocalSavedAccounts(),
     };
   });
+
+  const reloadSavedAccounts = useCallback(() => {
+    setState((prev) => ({ ...prev, savedAccounts: getLocalSavedAccounts() }));
+  }, []);
+
+  const removeSavedAccount = useCallback((email: string) => {
+    removeLocalAccount(email);
+    setState((prev) => ({ ...prev, savedAccounts: getLocalSavedAccounts() }));
+  }, []);
 
   // Listen for Firebase auth state changes
   useEffect(() => {
@@ -112,11 +182,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async (email: string, password: string, role?: UserRole) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    const cleanEmail = email.trim().toLowerCase();
     try {
       const response = await apiFetch<TokenResponse>("/auth/login", {
         method: "POST",
         body: {
-          email: email.trim().toLowerCase(),
+          email: cleanEmail,
           password,
           role: role || undefined,
         },
@@ -124,6 +195,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       localStorage.setItem("nourishnet_token", response.access_token);
       localStorage.setItem("nourishnet_user", JSON.stringify(response.user));
+
+      // Always save or update registered profile locally
+      saveLocalAccount({
+        email: response.user.email || cleanEmail,
+        name: response.user.name,
+        role: response.user.role,
+        org_name: response.user.org_name,
+        phone: response.user.phone,
+        address: response.user.address,
+        language_pref: response.user.language_pref,
+      });
 
       if (response.user.language_pref) {
         i18n.changeLanguage(response.user.language_pref);
@@ -136,9 +218,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isNewUser: false,
         isLoading: false,
         error: null,
+        savedAccounts: getLocalSavedAccounts(),
       }));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Login failed";
+      const lower = message.toLowerCase();
+
+      // Transparent Self-Healing Recovery:
+      // If the backend ephemeral SQLite database was reset on Render and returns 404 "No account found",
+      // but this user was previously registered on this device, automatically re-register & log in!
+      if (lower.includes("no account") || lower.includes("not found") || lower.includes("404")) {
+        const saved = getLocalSavedAccounts().find(
+          (a) => a.email.toLowerCase() === cleanEmail
+        );
+        if (saved) {
+          try {
+            const restored = await apiFetch<TokenResponse>("/auth/register", {
+              method: "POST",
+              body: {
+                name: saved.name,
+                email: saved.email,
+                password,
+                role: role || saved.role,
+                phone: saved.phone || undefined,
+                org_name: saved.org_name || undefined,
+                address: saved.address || undefined,
+                language_pref: saved.language_pref || "en",
+              },
+            });
+
+            localStorage.setItem("nourishnet_token", restored.access_token);
+            localStorage.setItem("nourishnet_user", JSON.stringify(restored.user));
+
+            if (restored.user.language_pref) {
+              i18n.changeLanguage(restored.user.language_pref);
+            }
+
+            setState((prev) => ({
+              ...prev,
+              token: restored.access_token,
+              appUser: restored.user,
+              isNewUser: false,
+              isLoading: false,
+              error: null,
+              savedAccounts: getLocalSavedAccounts(),
+            }));
+            return;
+          } catch {
+            // If background re-registration fails, continue to report login error
+          }
+        }
+      }
+
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -150,12 +281,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const register = useCallback(async (payload: RegisterPayload, autoLogin: boolean = false) => {
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    const cleanEmail = payload.email.trim().toLowerCase();
     try {
       const response = await apiFetch<TokenResponse>("/auth/register", {
         method: "POST",
         body: {
           name: payload.name.trim(),
-          email: payload.email.trim().toLowerCase(),
+          email: cleanEmail,
           password: payload.password,
           role: payload.role,
           phone: payload.phone?.trim() || undefined,
@@ -163,6 +295,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           address: payload.address?.trim() || undefined,
           language_pref: payload.language_pref || i18n.language || "en",
         },
+      });
+
+      // Securely store registered account locally for permanent persistence
+      saveLocalAccount({
+        name: payload.name.trim(),
+        email: cleanEmail,
+        role: payload.role,
+        phone: payload.phone?.trim() || undefined,
+        org_name: payload.org_name?.trim() || undefined,
+        address: payload.address?.trim() || undefined,
+        language_pref: payload.language_pref || i18n.language || "en",
       });
 
       if (autoLogin) {
@@ -180,6 +323,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isNewUser: true,
           isLoading: false,
           error: null,
+          savedAccounts: getLocalSavedAccounts(),
         }));
       } else {
         localStorage.removeItem("nourishnet_token");
@@ -191,6 +335,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isNewUser: false,
           isLoading: false,
           error: null,
+          savedAccounts: getLocalSavedAccounts(),
         }));
       }
 
@@ -289,7 +434,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     localStorage.removeItem("nourishnet_token");
     localStorage.removeItem("nourishnet_user");
-    setState({
+    setState((prev) => ({
+      ...prev,
       firebaseUser: null,
       appUser: null,
       token: null,
@@ -297,7 +443,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isInitialLoading: false,
       isNewUser: false,
       error: null,
-    });
+      savedAccounts: getLocalSavedAccounts(),
+    }));
   }, []);
 
   const clearError = useCallback(() => {
@@ -314,6 +461,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateLanguagePref,
         logout,
         clearError,
+        removeSavedAccount,
+        reloadSavedAccounts,
       }}
     >
       {children}

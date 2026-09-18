@@ -47,7 +47,13 @@ interface Claim {
 export default function VolunteerDashboard() {
   const { t } = useTranslation();
   const { appUser, token } = useAuth();
-  const { lat: userLat, lng: userLng, isAutoDetected, requestLocation } = useGeolocation();
+  const {
+    lat: userLat,
+    lng: userLng,
+    isAutoDetected,
+    isGpsPrecise,
+    refreshExactGps,
+  } = useGeolocation();
 
   const [currentLat, setCurrentLat] = useState(userLat);
   const [currentLng, setCurrentLng] = useState(userLng);
@@ -152,11 +158,21 @@ export default function VolunteerDashboard() {
     onClaimStatusUpdated,
     onVolunteerRequestCreated,
     onPollFallback: refreshAll,
-    pollIntervalMs: 8000,
+    pollIntervalMs: 3000,
   });
 
   useEffect(() => {
     refreshAll();
+
+    const handleSync = () => {
+      refreshAll();
+    };
+    window.addEventListener("focus", handleSync);
+    document.addEventListener("visibilitychange", handleSync);
+    return () => {
+      window.removeEventListener("focus", handleSync);
+      document.removeEventListener("visibilitychange", handleSync);
+    };
   }, [refreshAll]);
 
   // Post location update to backend for active delivery
@@ -180,7 +196,7 @@ export default function VolunteerDashboard() {
     (c) => c.status === "assigned" || c.status === "picked_up",
   );
 
-  // Real-time GPS streaming effect
+  // Real-time high-accuracy GPS streaming effect
   useEffect(() => {
     if (!isSharingLocation || !activeDelivery) {
       if (locationWatchIdRef.current !== null) {
@@ -193,6 +209,8 @@ export default function VolunteerDashboard() {
     if ("geolocation" in navigator) {
       locationWatchIdRef.current = navigator.geolocation.watchPosition(
         (pos) => {
+          setCurrentLat(pos.coords.latitude);
+          setCurrentLng(pos.coords.longitude);
           postLocation(
             activeDelivery.id,
             pos.coords.latitude,
@@ -202,7 +220,7 @@ export default function VolunteerDashboard() {
         (err) => {
           console.warn("GPS watch error:", err);
         },
-        { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 },
+        { enableHighAccuracy: true, maximumAge: 1000, timeout: 10000 },
       );
     }
 
@@ -218,22 +236,20 @@ export default function VolunteerDashboard() {
     setDetectingGps(true);
     setError(null);
     try {
-      const coords = await requestLocation();
+      const coords = await refreshExactGps();
       if (coords) {
         setCurrentLat(coords.lat);
         setCurrentLng(coords.lng);
+        const accStr = coords.accuracy ? ` (~${Math.round(coords.accuracy)}m accuracy)` : "";
         setSuccess(
-          `🎯 Location auto-detected: ${coords.city || "Current Area"} (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`
+          `🎯 Exact Live GPS Locked: ${coords.city || "Current Location"} (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})${accStr}`
         );
         if (activeDelivery) {
           await postLocation(activeDelivery.id, coords.lat, coords.lng);
-          setSuccess(
-            `🎯 GPS auto-detected & broadcasted to NGO: ${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}`
-          );
         }
       }
     } catch {
-      setError("Failed to auto-detect location. Please check browser permissions.");
+      setError("Failed to acquire exact GPS location. Please check device location permissions.");
     } finally {
       setDetectingGps(false);
     }
@@ -1200,7 +1216,26 @@ export default function VolunteerDashboard() {
                         </span>
                       </div>
 
-                      <div style={{ display: "flex", gap: "6px" }}>
+                      <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                        <button
+                          type="button"
+                          onClick={handleAutoDetectGps}
+                          disabled={detectingGps}
+                          style={{
+                            background: isGpsPrecise ? "#059669" : "#ffffff",
+                            border: `1px solid ${isGpsPrecise ? "#059669" : "#d97706"}`,
+                            color: isGpsPrecise ? "#ffffff" : "#b45309",
+                            borderRadius: "6px",
+                            padding: "4px 10px",
+                            fontSize: "0.75rem",
+                            fontWeight: 700,
+                            cursor: detectingGps ? "not-allowed" : "pointer",
+                          }}
+                          title="Lock onto highest precision device GPS coordinates"
+                        >
+                          {detectingGps ? "⏳ Locking GPS..." : isGpsPrecise ? "🎯 GPS Locked ✓" : "🎯 Lock Exact GPS"}
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => setIsSharingLocation(!isSharingLocation)}

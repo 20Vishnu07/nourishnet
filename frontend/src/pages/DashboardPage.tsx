@@ -132,11 +132,11 @@ export default function DashboardPage() {
         style={{
           background: currentTheme.gradient,
           color: "#ffffff",
-          padding: "1.1rem 1.5rem",
+          padding: "1.1rem clamp(0.75rem, 3vw, 1.75rem)",
           boxShadow: "0 2px 10px rgba(0,0,0,0.06)",
         }}
       >
-        <div style={{ maxWidth: "1180px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
+        <div style={{ maxWidth: "1360px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "0.75rem" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <span style={{ fontSize: "1.4rem" }}>{roleEmoji[activeRole]}</span>
@@ -220,9 +220,9 @@ const styles: Record<string, React.CSSProperties> = {
     zIndex: 100,
   },
   headerContent: {
-    maxWidth: "1180px",
+    maxWidth: "1360px",
     margin: "0 auto",
-    padding: "0.75rem 1.25rem",
+    padding: "0.75rem clamp(0.75rem, 3vw, 1.75rem)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
@@ -290,8 +290,8 @@ const styles: Record<string, React.CSSProperties> = {
     fontWeight: 600,
   },
   main: {
-    maxWidth: "1180px",
+    maxWidth: "1360px",
     margin: "1.5rem auto",
-    padding: "0 1.25rem 3.5rem",
+    padding: "0 clamp(0.75rem, 3vw, 1.75rem) 3.5rem",
   },
 };

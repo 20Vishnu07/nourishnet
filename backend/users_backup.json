@@ -1,0 +1,32 @@
+{
+  "donor1@example.com": {
+    "email": "donor1@example.com",
+    "hashed_password": "fecf331030a9e7afe15f34637aecc7d3$73f7b29cac8983c51ab927580300275b95e5957ed96995a5c3e75c83bbf4ed84",
+    "name": "Sunshine Bakery",
+    "role": "donor",
+    "phone": "+919876543210",
+    "org_name": "Sunshine Cafe Pvt Ltd",
+    "address": "12 Anna Nagar, Chennai",
+    "language_pref": "en"
+  },
+  "testvol1@example.com": {
+    "email": "testvol1@example.com",
+    "hashed_password": "99db5f436bdcb122b107092a991ac830$1e8bc6ba249824a99565f262575a0f7e4e39625da4fa22a55d953eb34db7830c",
+    "name": "Volunteer One",
+    "role": "volunteer",
+    "phone": "+917585914227",
+    "org_name": null,
+    "address": null,
+    "language_pref": "en"
+  },
+  "testvol2@example.com": {
+    "email": "testvol2@example.com",
+    "hashed_password": "b5ddf865c8509ae42dd47bcd51e2f3f5$3f17375eaf51217b28a28568bb9de4afe3577b7059a17157151fdb51988f5a44",
+    "name": "Volunteer Two",
+    "role": "volunteer",
+    "phone": "+910405628911",
+    "org_name": null,
+    "address": null,
+    "language_pref": "en"
+  }
+}

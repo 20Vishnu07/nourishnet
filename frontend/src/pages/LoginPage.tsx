@@ -12,7 +12,7 @@ export default function LoginPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { login, register, verifyAndLogin, error, clearError, isLoading } = useAuth();
+  const { login, register, verifyAndLogin, error, clearError, isLoading, savedAccounts, removeSavedAccount } = useAuth();
 
   const initialRole = (searchParams.get("role") as UserRole) || "donor";
   const initialMode = (searchParams.get("mode") as AuthMode) || "signin";
@@ -276,7 +276,7 @@ export default function LoginPage() {
 
   return (
     <div style={styles.container}>
-      <div style={styles.card}>
+      <div style={styles.card} className="modal-card-responsive">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1rem" }}>
           <Link to="/" style={{ textDecoration: "none", color: colors.primary, fontSize: "0.85rem", fontWeight: 700 }}>
             ← Home
@@ -398,6 +398,70 @@ export default function LoginPage() {
               <span>{roleTitles[role].icon}</span>
               <span>Signing in as: <strong>{roleTitles[role].title}</strong></span>
             </div>
+
+            {savedAccounts && savedAccounts.length > 0 && (
+              <div style={{ marginTop: "0.25rem", marginBottom: "0.25rem" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "6px" }}>
+                  <span style={{ fontSize: "0.76rem", fontWeight: 700, color: "#334155" }}>
+                    💾 Saved Accounts on this Device:
+                  </span>
+                  <span style={{ fontSize: "0.68rem", color: "#64748b" }}>
+                    (Click to autofill)
+                  </span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                  {savedAccounts.slice(0, 3).map((acc) => (
+                    <div
+                      key={acc.email}
+                      onClick={() => {
+                        setEmail(acc.email);
+                        setRole(acc.role);
+                        setLocalSuccess(`Loaded account for ${acc.name} (${roleTitles[acc.role]?.title || acc.role})`);
+                      }}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        background: email.toLowerCase() === acc.email.toLowerCase() ? "#ecfdf5" : "#f8fafc",
+                        border: `1px solid ${email.toLowerCase() === acc.email.toLowerCase() ? "#10b981" : "#e2e8f0"}`,
+                        borderRadius: "8px",
+                        padding: "6px 10px",
+                        cursor: "pointer",
+                        fontSize: "0.8rem",
+                        transition: "all 0.15s ease",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", minWidth: 0, overflow: "hidden" }}>
+                        <span>{roleTitles[acc.role]?.icon || "👤"}</span>
+                        <div style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          <strong style={{ color: "#0f172a" }}>{acc.name}</strong>
+                          <span style={{ color: "#64748b", marginLeft: "6px", fontSize: "0.75rem" }}>{acc.email}</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeSavedAccount(acc.email);
+                        }}
+                        title="Remove saved account"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "#94a3b8",
+                          cursor: "pointer",
+                          fontSize: "0.75rem",
+                          padding: "2px 6px",
+                          flexShrink: 0,
+                        }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <label style={styles.label}>{t("auth.emailLabel")}</label>
             <input
@@ -975,10 +1039,11 @@ const styles: Record<string, React.CSSProperties> = {
     backgroundColor: "#ffffff",
     borderRadius: "16px",
     boxShadow: shadows.lg,
-    padding: "2rem",
+    padding: "clamp(1.15rem, 3.5vw, 2rem)",
     width: "100%",
     maxWidth: "460px",
     border: `1px solid ${colors.border}`,
+    boxSizing: "border-box",
   },
   title: {
     fontSize: "1.5rem",

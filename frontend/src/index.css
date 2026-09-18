@@ -140,26 +140,101 @@ img, video, canvas, svg {
 
 input, select, textarea, button {
   max-width: 100%;
+  box-sizing: border-box;
 }
 
-/* 2. Touch friendly targets & comfortable mobile padding */
+/* 2. Universal responsive utility classes */
+.container-responsive {
+  width: 100%;
+  max-width: 1360px;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: clamp(0.75rem, 3vw, 1.75rem);
+  padding-right: clamp(0.75rem, 3vw, 1.75rem);
+}
+
+.grid-responsive-roles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.grid-responsive-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+.modal-card-responsive {
+  width: 100%;
+  max-width: 480px;
+  margin: auto;
+  border-radius: 16px;
+  box-sizing: border-box;
+}
+
+.mobile-stack {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.responsive-map-container {
+  width: 100%;
+  height: 380px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* 3. Laptops & Compact Desktops (1024px to 1280px) */
+@media (max-width: 1280px) {
+  .grid-responsive-roles {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+}
+
+/* 4. Tablets & Small Laptops (769px to 1024px) */
+@media (max-width: 1024px) {
+  .grid-responsive-roles {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .grid-responsive-stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .hero-container-desktop {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* 5. Mobile Smartphones & Foldables (<= 768px) */
 @media (max-width: 768px) {
-  /* Prevent iOS auto-zoom on input focus */
+  /* Touch target sizes & input auto-zoom prevention on iOS */
   input, select, textarea {
     font-size: 16px !important;
   }
 
-  /* Compact header on mobile screens */
   header {
-    padding-left: 0.75rem !important;
-    padding-right: 0.75rem !important;
+    padding-left: 0.5rem !important;
+    padding-right: 0.5rem !important;
   }
 
-  /* Fluid modal popups for mobile screens */
-  .modal-card-responsive,
-  div[style*="maxWidth: \"440px\""],
-  div[style*="maxWidth: \"460px\""],
-  div[style*="maxWidth: \"500px\""] {
+  .grid-responsive-roles {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+
+  .grid-responsive-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+  }
+
+  .mobile-stack {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .modal-card-responsive {
     width: 95vw !important;
     max-width: 95vw !important;
     padding: 1.25rem 1rem !important;
@@ -169,74 +244,83 @@ input, select, textarea, button {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Wrap dashboard header user info neatly */
-  header > div {
-    padding: 0.5rem 0.75rem !important;
-    gap: 0.5rem !important;
+  /* Support both kebab-case and camelCase DOM representations for legacy inline styles */
+  div[style*="max-width: 440px"],
+  div[style*="max-width: 460px"],
+  div[style*="max-width: 500px"],
+  div[style*="max-width:440px"],
+  div[style*="max-width:460px"],
+  div[style*="max-width:500px"] {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    padding: 1.25rem 1rem !important;
+    margin: auto !important;
+    box-sizing: border-box !important;
   }
 
-  /* Mobile friendly tabs and buttons */
-  button {
-    min-height: 38px;
-  }
-
-  /* Make form row flex items 100% width on mobile */
-  div[style*="minWidth: \"200px\""],
-  div[style*="minWidth: 200px"] {
+  div[style*="min-width: 200px"],
+  div[style*="min-width:200px"] {
     min-width: 100% !important;
   }
 
-  /* Adapt hero action groups and demo pills */
-  div[style*="heroActionGroup"] button,
-  div[style*="demoPreviewBar"] {
-    width: 100% !important;
+  .responsive-map-container,
+  div[style*="height: 400px"],
+  div[style*="height: 380px"],
+  div[style*="height:400px"],
+  div[style*="height:380px"] {
+    height: 280px !important;
   }
 
-  /* Reduce large hero titles on small smartphone displays */
+  /* Typography fluid scaling on mobile devices */
   h1 {
-    font-size: clamp(1.65rem, 6vw, 2.5rem) !important;
+    font-size: clamp(1.6rem, 6vw, 2.2rem) !important;
     line-height: 1.2 !important;
   }
 
   h2 {
-    font-size: clamp(1.35rem, 5vw, 1.85rem) !important;
+    font-size: clamp(1.25rem, 5vw, 1.7rem) !important;
+    line-height: 1.25 !important;
   }
 
-  /* Ensure map heights adapt nicely on small smartphone screens */
-  div[style*="height: \"400px\""],
-  div[style*="height: \"380px\""] {
-    height: 280px !important;
+  h3 {
+    font-size: clamp(1.05rem, 4.5vw, 1.35rem) !important;
+  }
+
+  button {
+    min-height: 40px;
   }
 }
 
-/* 3. Small smartphone screens (e.g. iPhone SE, Galaxy A-series <= 480px) */
+/* 6. Extra Small Smartphone Displays (<= 480px) */
 @media (max-width: 480px) {
   body {
     font-size: 14px;
   }
 
-  /* Allow flex wrapping on mobile navbar controls */
+  .grid-responsive-stats {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Allow wrapping on compact headers */
+  header > div {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+
   header > div > div {
-    flex-wrap: wrap !important;
-  }
-
-  /* Make full width buttons in card actions */
-  div[style*="cardActions"] button,
-  div[style*="cardActions"] {
+    justify-content: space-between !important;
     width: 100% !important;
-    justify-content: stretch !important;
-  }
-
-  /* Floating auto-location banner compact font */
-  div[style*="Auto-detected Location"] {
-    font-size: 0.72rem !important;
   }
 }
 
-/* 4. Desktop & Laptop Wide Display Enhancements (>= 1200px) */
+/* 7. Large Desktop & Ultra-wide Displays (>= 1200px) */
 @media (min-width: 1200px) {
   .hero-container-desktop {
+    display: grid !important;
     grid-template-columns: 1.15fr 0.85fr !important;
+    align-items: center !important;
+    gap: 3rem !important;
   }
 }
 

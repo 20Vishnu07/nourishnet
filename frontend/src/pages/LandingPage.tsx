@@ -1767,14 +1767,14 @@ const landingStyles: Record<string, React.CSSProperties> = {
     boxShadow: shadows.sm,
   },
   navContent: {
-    maxWidth: "1200px",
+    maxWidth: "1360px",
     margin: "0 auto",
-    padding: "0.75rem 1.5rem",
+    padding: "0.75rem clamp(0.75rem, 3vw, 1.75rem)",
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    gap: "1rem",
-    flexWrap: "nowrap",
+    gap: "0.75rem",
+    flexWrap: "wrap",
   },
   brandWrap: {
     display: "flex",
@@ -1822,6 +1822,7 @@ const landingStyles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     gap: "0.75rem",
     flexShrink: 0,
+    flexWrap: "wrap",
   },
   navSignInBtn: {
     backgroundColor: colors.primary,
@@ -1837,8 +1838,8 @@ const landingStyles: Record<string, React.CSSProperties> = {
 
   // HERO
   heroSection: {
-    padding: "3.5rem 1.5rem 2.5rem",
-    maxWidth: "1200px",
+    padding: "clamp(2rem, 5vw, 3.5rem) clamp(0.75rem, 3vw, 1.75rem)",
+    maxWidth: "1360px",
     margin: "0 auto",
   },
   heroContainer: {
@@ -2025,23 +2026,23 @@ const landingStyles: Record<string, React.CSSProperties> = {
 
   // SECTION BASE
   section: {
-    padding: "4rem 1.5rem",
-    maxWidth: "1200px",
+    padding: "clamp(2.5rem, 5vw, 4rem) clamp(0.75rem, 3vw, 1.75rem)",
+    maxWidth: "1360px",
     margin: "0 auto",
   },
   sectionHeader: {
     textAlign: "center",
-    marginBottom: "3rem",
+    marginBottom: "2.5rem",
   },
   sectionTitle: {
-    fontSize: "2rem",
+    fontSize: "clamp(1.5rem, 4vw, 2.2rem)",
     fontWeight: 800,
     letterSpacing: "-0.01em",
     color: colors.textDark,
     marginBottom: "0.5rem",
   },
   sectionSubtitle: {
-    fontSize: "1rem",
+    fontSize: "clamp(0.85rem, 2vw, 1rem)",
     color: colors.textMuted,
     maxWidth: "600px",
     margin: "0 auto",
@@ -2050,8 +2051,8 @@ const landingStyles: Record<string, React.CSSProperties> = {
   // ROLES CARDS GRID
   roleCardsGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-    gap: "2rem",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: "clamp(1rem, 2.5vw, 2rem)",
   },
   roleCard: {
     backgroundColor: "#ffffff",
@@ -2295,11 +2296,14 @@ const landingStyles: Record<string, React.CSSProperties> = {
   modalCard: {
     backgroundColor: "#ffffff",
     borderRadius: "20px",
-    padding: "2rem",
-    maxWidth: "440px",
+    padding: "clamp(1.15rem, 3.5vw, 2rem)",
+    maxWidth: "460px",
     width: "100%",
     boxShadow: shadows.xl,
     position: "relative",
+    boxSizing: "border-box",
+    maxHeight: "92vh",
+    overflowY: "auto",
   },
   modalCloseBtn: {
     position: "absolute",

@@ -35,13 +35,22 @@ interface Claim {
 export default function NGODashboard() {
   const { t } = useTranslation();
   const { appUser, token } = useAuth();
-  const { lat, lng, error: geoError, isAutoDetected, requestLocation } = useGeolocation();
+  const {
+    lat,
+    lng,
+    error: geoError,
+    isAutoDetected,
+    isGpsPrecise,
+    accuracy,
+    refreshExactGps,
+  } = useGeolocation();
 
   const [donations, setDonations] = useState<Donation[]>([]);
   const [myClaims, setMyClaims] = useState<Claim[]>([]);
   const [activeTab, setActiveTab] = useState<"overview" | "radar" | "claims">("overview");
   const [selectedDonation, setSelectedDonation] = useState<Donation | null>(null);
   const [radiusKm, setRadiusKm] = useState(10);
+  const [showAllRegional, setShowAllRegional] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [claimSuccess, setClaimSuccess] = useState<string | null>(null);
@@ -59,34 +68,50 @@ export default function NGODashboard() {
     }
   }, [lat, lng]);
 
-  const loadNearby = useCallback(async (targetLat?: number, targetLng?: number) => {
+  const loadNearby = useCallback(async (targetLat?: number, targetLng?: number, forceRegional?: boolean) => {
+    const isRegional = forceRegional !== undefined ? forceRegional : showAllRegional;
     const qLat = typeof targetLat === "number" ? targetLat : radarLat;
     const qLng = typeof targetLng === "number" ? targetLng : radarLng;
     setLoading(true);
     setError(null);
     try {
-      const result = await apiFetch<Donation[]>(
-        `/donations/nearby?lat=${qLat}&lng=${qLng}&radius_km=${radiusKm}`,
-        { token },
-      );
+      let result: Donation[] = [];
+      if (isRegional || radiusKm >= 500) {
+        result = await apiFetch<Donation[]>("/donations/?status=available", { token });
+      } else {
+        result = await apiFetch<Donation[]>(
+          `/donations/nearby?lat=${qLat}&lng=${qLng}&radius_km=${radiusKm}`,
+          { token },
+        );
+        // Smart fast detection: If local radius yielded 0 donations, automatically check regional surplus
+        // so NGO instantly sees any active donations
+        if (result.length === 0) {
+          const all = await apiFetch<Donation[]>("/donations/?status=available", { token });
+          if (all.length > 0) {
+            result = all;
+            setShowAllRegional(true);
+            setLiveNotification("💡 Showing all active regional food surplus so you don't miss any meals!");
+          }
+        }
+      }
       setDonations(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load donations");
     } finally {
       setLoading(false);
     }
-  }, [radarLat, radarLng, radiusKm, token]);
+  }, [radarLat, radarLng, radiusKm, showAllRegional, token]);
 
   const handleAutoDetectLocation = async () => {
     setDetectingLocation(true);
     setError(null);
     try {
-      const coords = await requestLocation();
+      const coords = await refreshExactGps();
       if (coords) {
         setRadarLat(coords.lat);
         setRadarLng(coords.lng);
         setLiveNotification(
-          `🎯 Radar auto-detected: ${coords.city || "Current Area"} (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}) — map updated!`
+          `🎯 Live GPS locked (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}) - Accuracy: ~${Math.round(coords.accuracy || 25)}m`
         );
         await loadNearby(coords.lat, coords.lng);
       }
@@ -143,12 +168,23 @@ export default function NGODashboard() {
       loadNearby();
       loadMyClaims();
     },
-    pollIntervalMs: 10000,
+    pollIntervalMs: 3000,
   });
 
   useEffect(() => {
     loadNearby();
     loadMyClaims();
+
+    const handleSync = () => {
+      loadNearby();
+      loadMyClaims();
+    };
+    window.addEventListener("focus", handleSync);
+    document.addEventListener("visibilitychange", handleSync);
+    return () => {
+      window.removeEventListener("focus", handleSync);
+      document.removeEventListener("visibilitychange", handleSync);
+    };
   }, [loadNearby, loadMyClaims]);
 
   const handleClaim = async (donation: Donation, requestVolunteerDelivery: boolean = false) => {
@@ -679,54 +715,121 @@ export default function NGODashboard() {
           <label style={styles.label}>
             {t("ngo.searchRadius")}{" "}
             <select
-              value={radiusKm}
-              onChange={(e) => setRadiusKm(Number(e.target.value))}
+              value={showAllRegional ? 999 : radiusKm}
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                if (val >= 500) {
+                  setShowAllRegional(true);
+                  loadNearby(radarLat, radarLng, true);
+                } else {
+                  setShowAllRegional(false);
+                  setRadiusKm(val);
+                  loadNearby(radarLat, radarLng, false);
+                }
+              }}
               style={styles.select}
             >
               <option value={5}>5 {t("common.km")}</option>
               <option value={10}>10 {t("common.km")}</option>
               <option value={25}>25 {t("common.km")}</option>
               <option value={50}>50 {t("common.km")}</option>
+              <option value={100}>100 {t("common.km")} (District)</option>
+              <option value={999}>🌐 All Regional Surplus</option>
             </select>
           </label>
 
           <span style={{
             fontSize: "0.8rem",
-            color: isAutoDetected ? "#059669" : "#475569",
+            color: isGpsPrecise ? "#059669" : isAutoDetected ? "#0284c7" : "#475569",
             fontWeight: 600,
             display: "inline-flex",
             alignItems: "center",
             gap: "4px",
-            background: isAutoDetected ? "#ecfdf5" : "#f1f5f9",
+            background: isGpsPrecise ? "#ecfdf5" : isAutoDetected ? "#f0f9ff" : "#f1f5f9",
             padding: "4px 10px",
             borderRadius: "8px",
-            border: isAutoDetected ? "1px solid #a7f3d0" : "1px solid #e2e8f0",
+            border: isGpsPrecise ? "1px solid #a7f3d0" : isAutoDetected ? "1px solid #bae6fd" : "1px solid #e2e8f0",
           }}>
-            📍 {isAutoDetected ? "Location Auto-Detected" : "Current Radar"}: {radarLat.toFixed(4)}, {radarLng.toFixed(4)}
+            📍 {isGpsPrecise ? `Exact Satellite GPS (~${Math.round(accuracy || 20)}m)` : isAutoDetected ? "Auto-Detected Area" : "Radar"}: {radarLat.toFixed(4)}, {radarLng.toFixed(4)}
           </span>
         </div>
 
-        <div style={{ display: "flex", gap: "0.5rem" }}>
+        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
           <button
             type="button"
             onClick={handleAutoDetectLocation}
             disabled={detectingLocation || loading}
             style={{
               ...styles.refreshBtn,
-              background: detectingLocation ? "#94a3b8" : "#0284c7",
+              background: detectingLocation ? "#94a3b8" : isGpsPrecise ? "#059669" : "#0284c7",
               color: "#ffffff",
               border: "none",
               fontWeight: 700,
               cursor: detectingLocation ? "not-allowed" : "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
             }}
+            title="Acquire highest accuracy GPS satellite/device fix"
           >
-            {detectingLocation ? "⏳ Detecting..." : "🎯 Auto-Detect Location"}
+            {detectingLocation ? "⏳ Locking GPS..." : isGpsPrecise ? "🎯 GPS Locked ✓" : "🎯 Lock Exact Live GPS"}
           </button>
-          <button onClick={() => loadNearby()} style={styles.refreshBtn} disabled={loading || detectingLocation}>
-            {loading ? t("common.loading") : `🔄 ${t("common.refresh")}`}
+          <button
+            onClick={() => loadNearby()}
+            style={{
+              ...styles.refreshBtn,
+              background: "#0284c7",
+              color: "#ffffff",
+              border: "none",
+              fontWeight: 700,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "6px",
+            }}
+            disabled={loading || detectingLocation}
+          >
+            {loading ? "⏳ Scanning..." : `⚡ Instant Radar Scan (${donations.length})`}
           </button>
         </div>
       </div>
+
+      {showAllRegional && (
+        <div style={{
+          background: "#eff6ff",
+          border: "1px solid #bfdbfe",
+          borderRadius: "10px",
+          padding: "8px 14px",
+          fontSize: "0.82rem",
+          color: "#1e40af",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: "8px",
+          marginBottom: "0.75rem",
+        }}>
+          <span>🌐 <strong>Regional Discovery Active:</strong> Displaying all available surplus donations so no food goes unnoticed.</span>
+          <button
+            type="button"
+            onClick={() => {
+              setShowAllRegional(false);
+              loadNearby(radarLat, radarLng, false);
+            }}
+            style={{
+              background: "#ffffff",
+              border: "1px solid #bfdbfe",
+              color: "#1e40af",
+              borderRadius: "6px",
+              padding: "3px 8px",
+              fontSize: "0.75rem",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Filter by {radiusKm} km Radius
+          </button>
+        </div>
+      )}
 
       <DonationMap
         center={{ lat: radarLat, lng: radarLng }}

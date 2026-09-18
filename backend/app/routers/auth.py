@@ -20,8 +20,56 @@ from app.auth.security import hash_password, verify_password
 from app.auth.firebase import verify_firebase_token
 from app.auth.jwt_handler import create_access_token
 from app.auth.dependencies import get_current_user
+import json
+from pathlib import Path
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+BACKUP_FILE = Path(__file__).resolve().parent.parent.parent / "users_backup.json"
+
+def _save_user_to_backup(user_dict: dict):
+    try:
+        data = {}
+        if BACKUP_FILE.exists():
+            with open(BACKUP_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        email_key = user_dict["email"].lower().strip()
+        data[email_key] = user_dict
+        with open(BACKUP_FILE, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        print(f"Warning: could not write to users_backup.json: {e}")
+
+def _restore_users_from_backup(db: Session):
+    if not BACKUP_FILE.exists():
+        return
+    try:
+        with open(BACKUP_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for email_key, u in data.items():
+            existing = db.query(User).filter(User.email == email_key).first()
+            if not existing:
+                role_val = u.get("role", "donor")
+                try:
+                    role_enum = UserRole(role_val)
+                except ValueError:
+                    role_enum = UserRole.donor
+
+                new_u = User(
+                    email=email_key,
+                    hashed_password=u.get("hashed_password"),
+                    name=u.get("name", "User"),
+                    role=role_enum,
+                    phone=u.get("phone"),
+                    org_name=u.get("org_name"),
+                    address=u.get("address"),
+                    language_pref=u.get("language_pref", "en"),
+                )
+                db.add(new_u)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Warning: could not restore users from backup: {e}")
 
 
 class TokenVerifyRequest(BaseModel):
@@ -94,6 +142,17 @@ def register_user(request: UserRegisterRequest, db: Session = Depends(get_db)):
                 detail=f"Registration failed: {str(retry_err)}",
             )
 
+    _save_user_to_backup({
+        "email": new_user.email,
+        "hashed_password": new_user.hashed_password,
+        "name": new_user.name,
+        "role": new_user.role.value,
+        "phone": new_user.phone,
+        "org_name": new_user.org_name,
+        "address": new_user.address,
+        "language_pref": new_user.language_pref,
+    })
+
     access_token = create_access_token(
         data={"user_id": new_user.id, "role": new_user.role.value}
     )
@@ -110,6 +169,11 @@ def login_user(request: UserLoginRequest, db: Session = Depends(get_db)):
     """Sign in an existing user with email and password."""
     clean_email = request.email.lower().strip()
     user = db.query(User).filter(User.email == clean_email).first()
+
+    if not user:
+        # Check if users backup exists and attempt auto-restore
+        _restore_users_from_backup(db)
+        user = db.query(User).filter(User.email == clean_email).first()
 
     if not user:
         raise HTTPException(

@@ -5,12 +5,14 @@ export interface LocationCoords {
   lng: number;
   city?: string;
   source?: "gps" | "ip" | "default";
+  accuracy?: number;
 }
 
 interface LocationState extends LocationCoords {
   error: string | null;
   loading: boolean;
   isAutoDetected: boolean;
+  isGpsPrecise: boolean;
 }
 
 export const DEFAULT_LOCATION: LocationCoords = {
@@ -18,6 +20,7 @@ export const DEFAULT_LOCATION: LocationCoords = {
   lng: 80.2707,
   city: "Chennai",
   source: "default",
+  accuracy: 100,
 };
 
 import { apiFetch } from "../config/api";
@@ -192,12 +195,13 @@ export function useGeolocation() {
     error: null,
     loading: true,
     isAutoDetected: false,
+    isGpsPrecise: false,
   });
 
   const requestLocation = useCallback(async (): Promise<LocationCoords> => {
     setLocation((prev) => ({ ...prev, loading: true, error: null }));
 
-    // Step 1: Try HTML5 Browser GPS (High accuracy, 6s timeout)
+    // Step 1: Try HTML5 Browser GPS (High accuracy, 12s timeout)
     if (typeof window !== "undefined" && "geolocation" in navigator) {
       try {
         const gpsCoords = await new Promise<LocationCoords | null>((resolve) => {
@@ -205,7 +209,8 @@ export function useGeolocation() {
             async (pos) => {
               const detectedLat = pos.coords.latitude;
               const detectedLng = pos.coords.longitude;
-              let humanCity = "GPS Location";
+              const accuracy = pos.coords.accuracy;
+              let humanCity = "Exact GPS Location";
               try {
                 const addr = await reverseGeocodeAddress(detectedLat, detectedLng);
                 if (addr) humanCity = addr;
@@ -218,19 +223,22 @@ export function useGeolocation() {
                 lng: detectedLng,
                 city: humanCity,
                 source: "gps",
+                accuracy,
               });
             },
             () => resolve(null),
-            { enableHighAccuracy: true, timeout: 6000, maximumAge: 0 }
+            { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
           );
         });
 
         if (gpsCoords) {
+          const isPrecise = (gpsCoords.accuracy || 999) <= 100;
           setLocation({
             ...gpsCoords,
             error: null,
             loading: false,
             isAutoDetected: true,
+            isGpsPrecise: isPrecise,
           });
           return gpsCoords;
         }
@@ -239,7 +247,7 @@ export function useGeolocation() {
       }
     }
 
-    // Step 2: If GPS is unavailable, denied, or timed out, query high-reliability IP geolocation
+    // Step 2: If GPS is unavailable or timed out, query high-reliability IP geolocation
     const ipCoords = await queryIpLocation();
     if (ipCoords) {
       let readableName = ipCoords.city;
@@ -250,12 +258,13 @@ export function useGeolocation() {
         /* ignore reverse geocode error */
       }
 
-      const resolvedCoords = { ...ipCoords, city: readableName };
+      const resolvedCoords = { ...ipCoords, city: readableName, accuracy: 2500 };
       setLocation({
         ...resolvedCoords,
         error: null,
         loading: false,
         isAutoDetected: true,
+        isGpsPrecise: false,
       });
       return resolvedCoords;
     }
@@ -267,14 +276,64 @@ export function useGeolocation() {
       error: "Location auto-detection unavailable. You can search or select on the map.",
       loading: false,
       isAutoDetected: false,
+      isGpsPrecise: false,
     });
     return fallback;
   }, []);
 
+  // Continuous high-precision GPS watcher for mobile & active device movement
   useEffect(() => {
     requestLocation();
+
+    let watchId: number | null = null;
+    if (typeof window !== "undefined" && "geolocation" in navigator) {
+      try {
+        watchId = navigator.geolocation.watchPosition(
+          async (pos) => {
+            const detectedLat = pos.coords.latitude;
+            const detectedLng = pos.coords.longitude;
+            const acc = pos.coords.accuracy;
+
+            // Only override if accuracy is good (<= 150m) or previous source wasn't precise GPS
+            setLocation((prev) => {
+              if (prev.source === "gps" && (prev.accuracy || 999) < acc && acc > 50) {
+                return prev;
+              }
+              return {
+                ...prev,
+                lat: detectedLat,
+                lng: detectedLng,
+                accuracy: acc,
+                source: "gps",
+                isAutoDetected: true,
+                isGpsPrecise: acc <= 100,
+                loading: false,
+                error: null,
+              };
+            });
+          },
+          () => {
+            /* ignore watch error */
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+      } catch {
+        /* ignore watchPosition error */
+      }
+    }
+
+    return () => {
+      if (watchId !== null && typeof window !== "undefined" && "geolocation" in navigator) {
+        navigator.geolocation.clearWatch(watchId);
+      }
+    };
   }, [requestLocation]);
 
-  return { ...location, requestLocation, DEFAULT_LOCATION };
+  return {
+    ...location,
+    requestLocation,
+    refreshExactGps: requestLocation,
+    DEFAULT_LOCATION,
+  };
 }
 

@@ -24,7 +24,7 @@ interface Donation {
 export default function DonorDashboard() {
   const { t } = useTranslation();
   const { appUser, token } = useAuth();
-  const { lat, lng, isAutoDetected, requestLocation } = useGeolocation();
+  const { lat, lng, isAutoDetected, refreshExactGps } = useGeolocation();
 
   const [foodType, setFoodType] = useState("");
   const [quantity, setQuantity] = useState("");
@@ -95,12 +95,13 @@ export default function DonorDashboard() {
     setDetectingLocation(true);
     setError(null);
     try {
-      const coords = await requestLocation();
+      const coords = await refreshExactGps();
       if (coords) {
         setPickupLat(coords.lat);
         setPickupLng(coords.lng);
+        const accStr = coords.accuracy ? ` (~${Math.round(coords.accuracy)}m accuracy)` : "";
         setSuccess(
-          `📍 Location auto-detected: ${coords.city || "Current Location"} (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`
+          `📍 Exact Live GPS Locked: ${coords.city || "Current Location"} (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})${accStr}`
         );
       }
     } catch {

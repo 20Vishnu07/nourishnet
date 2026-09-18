@@ -152,11 +152,18 @@ export async function reverseGeocodeAddress(lat: number, lng: number): Promise<s
 }
 
 // Forward address search using OpenStreetMap Nominatim
+interface NominatimItem {
+  lat: string;
+  lon: string;
+  display_name: string;
+}
+
 export async function searchAddressNominatim(
   query: string
 ): Promise<Array<{ lat: number; lng: number; displayName: string }>> {
   const clean = query.trim();
   if (!clean || clean.length < 2) return [];
+
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
@@ -166,8 +173,8 @@ export async function searchAddressNominatim(
     );
     clearTimeout(timeoutId);
     if (res.ok) {
-      const items = await res.json();
-      return items.map((item: any) => ({
+      const items = (await res.json()) as NominatimItem[];
+      return items.map((item: NominatimItem) => ({
         lat: parseFloat(item.lat),
         lng: parseFloat(item.lon),
         displayName: item.display_name,
@@ -202,7 +209,9 @@ export function useGeolocation() {
               try {
                 const addr = await reverseGeocodeAddress(detectedLat, detectedLng);
                 if (addr) humanCity = addr;
-              } catch {}
+              } catch {
+                /* ignore reverse geocode error */
+              }
 
               resolve({
                 lat: detectedLat,
@@ -237,7 +246,9 @@ export function useGeolocation() {
       try {
         const addr = await reverseGeocodeAddress(ipCoords.lat, ipCoords.lng);
         if (addr) readableName = addr;
-      } catch {}
+      } catch {
+        /* ignore reverse geocode error */
+      }
 
       const resolvedCoords = { ...ipCoords, city: readableName };
       setLocation({

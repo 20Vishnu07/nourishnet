@@ -9,7 +9,7 @@ import { useRealtimeUpdates } from "../../hooks/useRealtimeUpdates";
 
 interface Donation extends DonationMarker {
   donor_id: number;
-  created_at: string;
+  created_at?: string;
 }
 
 interface Claim {
@@ -107,12 +107,12 @@ export default function NGODashboard() {
     }
   }, [appUser?.id, token]);
 
-  const onNewDonation = useCallback((newDonation: Donation) => {
+  const onNewDonation = useCallback((newDonation: { food_type: string; quantity: number; unit: string }) => {
     setLiveNotification(`🔔 Real-time: New donation available! "${newDonation.food_type}" (${newDonation.quantity} ${newDonation.unit})`);
     loadNearby();
   }, [loadNearby]);
 
-  const onClaimStatusUpdated = useCallback((updatedClaim: any) => {
+  const onClaimStatusUpdated = useCallback((updatedClaim: { id: number; status: string }) => {
     setLiveNotification(`🔔 Real-time: Claim #${updatedClaim.id} updated (${updatedClaim.status})`);
     loadNearby();
     loadMyClaims();

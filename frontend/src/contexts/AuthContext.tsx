@@ -50,7 +50,7 @@ interface AuthState {
 
 interface AuthContextType extends AuthState {
   login: (email: string, password: string, role?: UserRole) => Promise<void>;
-  register: (payload: RegisterPayload, autoLogin?: boolean) => Promise<any>;
+  register: (payload: RegisterPayload, autoLogin?: boolean) => Promise<TokenResponse>;
   verifyAndLogin: (
     idToken: string,
     name?: string,

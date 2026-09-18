@@ -129,7 +129,7 @@ export default function DonorDashboard() {
     }
   }, [appUser?.id, token]);
 
-  const onClaimStatusUpdated = useCallback((claim: any) => {
+  const onClaimStatusUpdated = useCallback((claim: { donation_id: number; status: string }) => {
     setLiveNotice(`🔔 Real-time: Your donation #${claim.donation_id} status updated to "${claim.status}"!`);
     loadMyDonations();
   }, [loadMyDonations]);
@@ -140,17 +140,19 @@ export default function DonorDashboard() {
     pollIntervalMs: 10000,
   });
 
-  const [prediction, setPrediction] = useState<{
+  interface PredictionData {
     predicted_surplus_kg: number;
     confidence: number;
     model_status: string;
     message: string;
-  } | null>(null);
+  }
+
+  const [prediction, setPrediction] = useState<PredictionData | null>(null);
 
   const loadPrediction = useCallback(async () => {
     if (!appUser?.id) return;
     try {
-      const pred = await apiFetch<any>(`/predictions/${appUser.id}`, { token });
+      const pred = await apiFetch<PredictionData>(`/predictions/${appUser.id}`, { token });
       setPrediction(pred);
     } catch {
       // Non-critical ML widget
@@ -720,7 +722,7 @@ export default function DonorDashboard() {
             ].map((f) => (
               <button
                 key={f.id}
-                onClick={() => setStatusFilter(f.id as any)}
+                onClick={() => setStatusFilter(f.id as "all" | "available" | "claimed" | "delivered")}
                 style={{
                   background: statusFilter === f.id ? "#059669" : "#ffffff",
                   color: statusFilter === f.id ? "#ffffff" : "#475569",

@@ -1,10 +1,46 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useAuth } from "../contexts/AuthContext";
 
+export interface RealtimeDonation {
+  id: number;
+  donor_id: number;
+  food_type: string;
+  quantity: number;
+  unit: string;
+  expiry_time: string;
+  status: string;
+  pickup_lat: number;
+  pickup_lng: number;
+  image_url?: string | null;
+  created_at?: string;
+}
+
+export interface RealtimeClaim {
+  id: number;
+  donation_id: number;
+  ngo_id: number;
+  volunteer_id?: number | null;
+  status: string;
+  needs_volunteer?: boolean;
+  volunteer_lat?: number | null;
+  volunteer_lng?: number | null;
+  volunteer_updated_at?: string | null;
+  created_at?: string;
+  donation?: RealtimeDonation;
+}
+
+export interface VolunteerLocationData {
+  claim_id: number;
+  lat: number;
+  lng: number;
+  status?: string;
+  volunteer_id?: number;
+}
+
 export interface WebSocketMessage {
   type: "NEW_DONATION" | "CLAIM_STATUS_UPDATED" | "VOLUNTEER_LOCATION_UPDATED" | "VOLUNTEER_REQUEST_CREATED";
-  donation?: any;
-  claim?: any;
+  donation?: RealtimeDonation;
+  claim?: RealtimeClaim;
   claim_id?: number;
   ngo_id?: number;
   volunteer_id?: number;
@@ -14,10 +50,10 @@ export interface WebSocketMessage {
 }
 
 interface UseRealtimeOptions {
-  onNewDonation?: (donation: any) => void;
-  onClaimStatusUpdated?: (claim: any) => void;
-  onVolunteerLocationUpdated?: (data: any) => void;
-  onVolunteerRequestCreated?: (claim: any) => void;
+  onNewDonation?: (donation: RealtimeDonation) => void;
+  onClaimStatusUpdated?: (claim: RealtimeClaim) => void;
+  onVolunteerLocationUpdated?: (data: VolunteerLocationData) => void;
+  onVolunteerRequestCreated?: (claim: RealtimeClaim) => void;
   onPollFallback?: () => void;
   pollIntervalMs?: number;
 }
@@ -88,8 +124,14 @@ export function useRealtimeUpdates({
             onNewDonation(data.donation);
           } else if (data.type === "CLAIM_STATUS_UPDATED" && onClaimStatusUpdated && data.claim) {
             onClaimStatusUpdated(data.claim);
-          } else if (data.type === "VOLUNTEER_LOCATION_UPDATED" && onVolunteerLocationUpdated) {
-            onVolunteerLocationUpdated(data);
+          } else if (data.type === "VOLUNTEER_LOCATION_UPDATED" && onVolunteerLocationUpdated && data.claim_id != null && data.lat != null && data.lng != null) {
+            onVolunteerLocationUpdated({
+              claim_id: data.claim_id,
+              lat: data.lat,
+              lng: data.lng,
+              status: data.status,
+              volunteer_id: data.volunteer_id,
+            });
           } else if (data.type === "VOLUNTEER_REQUEST_CREATED" && onVolunteerRequestCreated && data.claim) {
             onVolunteerRequestCreated(data.claim);
           }

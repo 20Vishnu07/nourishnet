@@ -83,7 +83,7 @@ export default function LandingPage() {
     if (!cleanEmail || !password) {
       const err = "⚠️ Please enter both your email ID and password.";
       setLocalError(err);
-      try { window.alert(err); } catch {}
+      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
@@ -115,7 +115,7 @@ export default function LandingPage() {
       }
 
       setLocalError(errMsg);
-      try { window.alert(errMsg); } catch {}
+      try { window.alert(errMsg); } catch { /* ignore */ }
     }
   };
 
@@ -128,25 +128,25 @@ export default function LandingPage() {
     if (!name.trim()) {
       const err = "⚠️ Please enter your full name.";
       setLocalError(err);
-      try { window.alert(err); } catch {}
+      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
     if (!email.trim() || !email.includes("@")) {
       const err = "⚠️ Please enter a valid email address.";
       setLocalError(err);
-      try { window.alert(err); } catch {}
+      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
     if (!password || password.length < 6) {
       const err = "⚠️ Password must be at least 6 characters.";
       setLocalError(err);
-      try { window.alert(err); } catch {}
+      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
     if (selectedRole === "ngo" && !orgName.trim()) {
       const err = "⚠️ Please enter your Organization / NGO name.";
       setLocalError(err);
-      try { window.alert(err); } catch {}
+      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
@@ -167,7 +167,7 @@ export default function LandingPage() {
       setIsAuthOpen(false);
       try {
         window.alert("Account Created Successfully");
-      } catch {}
+      } catch { /* ignore */ }
 
       // Direct auto-login to registered account portal!
       navigate("/dashboard", { replace: true });
@@ -180,7 +180,7 @@ export default function LandingPage() {
       setLocalError(errMsg);
       try {
         window.alert(errMsg);
-      } catch {}
+      } catch { /* ignore */ }
     } finally {
       setIsRegistering(false);
     }
@@ -197,7 +197,7 @@ export default function LandingPage() {
     if (!cleanEmail || !cleanEmail.includes("@")) {
       const err = "⚠️ Please enter a valid registered email address.";
       setLocalError(err);
-      try { window.alert(err); } catch {}
+      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
@@ -219,11 +219,11 @@ export default function LandingPage() {
       setLocalSuccess(successMsg);
       try {
         window.alert(`✅ Password Reset Code: ${res.reset_code}\n\nPlease enter this 6-digit code and your new password to reset.`);
-      } catch {}
+      } catch { /* ignore */ }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to generate reset code.";
       setLocalError(msg);
-      try { window.alert(msg); } catch {}
+      try { window.alert(msg); } catch { /* ignore */ }
     } finally {
       setIsResetSubmitting(false);
     }
@@ -241,20 +241,20 @@ export default function LandingPage() {
       const err = "⚠️ No active recovery request found. Please request a new verification code.";
       setLocalError(err);
       setResetStep(1);
-      try { window.alert(err); } catch {}
+      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
     if (!resetCode.trim()) {
       const err = "⚠️ Please enter the 6-digit verification code.";
       setLocalError(err);
-      try { window.alert(err); } catch {}
+      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
     if (!newPassword || newPassword.length < 6) {
       const err = "⚠️ New password must be at least 6 characters long.";
       setLocalError(err);
-      try { window.alert(err); } catch {}
+      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
@@ -280,11 +280,11 @@ export default function LandingPage() {
       setNewPassword("");
       try {
         window.alert(successMsg);
-      } catch {}
+      } catch { /* ignore */ }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Password reset failed.";
       setLocalError(msg);
-      try { window.alert(msg); } catch {}
+      try { window.alert(msg); } catch { /* ignore */ }
     } finally {
       setIsResetSubmitting(false);
     }

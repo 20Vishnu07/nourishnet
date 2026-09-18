@@ -138,12 +138,12 @@ export default function VolunteerDashboard() {
     await Promise.all([loadClaims(), loadAvailableClaims()]);
   }, [loadClaims, loadAvailableClaims]);
 
-  const onClaimStatusUpdated = useCallback((claim: any) => {
+  const onClaimStatusUpdated = useCallback((claim: { id: number; status: string }) => {
     setLiveNotice(`🔔 Real-time: Claim #${claim.id} updated to status "${claim.status}"`);
     refreshAll();
   }, [refreshAll]);
 
-  const onVolunteerRequestCreated = useCallback((claim: any) => {
+  const onVolunteerRequestCreated = useCallback((claim: { id: number }) => {
     setLiveNotice(`🚨 Real-time: An NGO just requested a volunteer courier for claim #${claim.id}!`);
     refreshAll();
   }, [refreshAll]);

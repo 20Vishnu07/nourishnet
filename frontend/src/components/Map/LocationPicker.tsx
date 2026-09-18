@@ -67,7 +67,7 @@ export default function LocationPicker({
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<Array<{ lat: number; lng: number; displayName: string }>>([]);
   const [readableAddress, setReadableAddress] = useState<string>("");
-  const markerRef = useRef<any>(null);
+  const markerRef = useRef<L.Marker | null>(null);
 
   // Auto reverse-geocode whenever coordinates change
   useEffect(() => {

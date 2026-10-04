@@ -27,6 +27,7 @@ export default function LandingPage() {
     name: string;
     email: string;
     role: UserRole;
+    orgName?: string;
   } | null>(null);
 
   // Forgot password state
@@ -83,7 +84,6 @@ export default function LandingPage() {
     if (!cleanEmail || !password) {
       const err = "⚠️ Please enter both your email ID and password.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
@@ -115,7 +115,6 @@ export default function LandingPage() {
       }
 
       setLocalError(errMsg);
-      try { window.alert(errMsg); } catch { /* ignore */ }
     }
   };
 
@@ -128,25 +127,21 @@ export default function LandingPage() {
     if (!name.trim()) {
       const err = "⚠️ Please enter your full name.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
     if (!email.trim() || !email.includes("@")) {
       const err = "⚠️ Please enter a valid email address.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
     if (!password || password.length < 6) {
       const err = "⚠️ Password must be at least 6 characters.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
     if (selectedRole === "ngo" && !orgName.trim()) {
       const err = "⚠️ Please enter your Organization / NGO name.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
@@ -163,14 +158,19 @@ export default function LandingPage() {
         language_pref: i18n.language || "en",
       }, true);
 
-      sessionStorage.setItem("account_created", "true");
       setIsAuthOpen(false);
-      try {
-        window.alert("Account Created Successfully");
-      } catch { /* ignore */ }
-
-      // Direct auto-login to registered account portal!
-      navigate("/dashboard", { replace: true });
+      const cleanEmail = email.trim().toLowerCase();
+      if (selectedRole === "donor" || selectedRole === "ngo") {
+        setSignupSuccessData({
+          role: selectedRole,
+          email: cleanEmail,
+          name: name.trim(),
+          orgName: selectedRole === "ngo" ? orgName.trim() : undefined,
+        });
+      } else {
+        sessionStorage.setItem("account_created", "true");
+        navigate("/dashboard", { replace: true });
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed";
       let errMsg = msg;
@@ -178,9 +178,6 @@ export default function LandingPage() {
         errMsg = "⚠️ This email ID is already registered. Please sign in with your password, or use a different email.";
       }
       setLocalError(errMsg);
-      try {
-        window.alert(errMsg);
-      } catch { /* ignore */ }
     } finally {
       setIsRegistering(false);
     }
@@ -197,7 +194,6 @@ export default function LandingPage() {
     if (!cleanEmail || !cleanEmail.includes("@")) {
       const err = "⚠️ Please enter a valid registered email address.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
@@ -217,13 +213,9 @@ export default function LandingPage() {
       }
       const successMsg = `✅ Verification code generated for ${cleanEmail}!`;
       setLocalSuccess(successMsg);
-      try {
-        window.alert(`✅ Password Reset Code: ${res.reset_code}\n\nPlease enter this 6-digit code and your new password to reset.`);
-      } catch { /* ignore */ }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to generate reset code.";
       setLocalError(msg);
-      try { window.alert(msg); } catch { /* ignore */ }
     } finally {
       setIsResetSubmitting(false);
     }
@@ -241,20 +233,17 @@ export default function LandingPage() {
       const err = "⚠️ No active recovery request found. Please request a new verification code.";
       setLocalError(err);
       setResetStep(1);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
     if (!resetCode.trim()) {
       const err = "⚠️ Please enter the 6-digit verification code.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
     if (!newPassword || newPassword.length < 6) {
       const err = "⚠️ New password must be at least 6 characters long.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
@@ -278,13 +267,9 @@ export default function LandingPage() {
       setRecoveryEmail("");
       setResetCode("");
       setNewPassword("");
-      try {
-        window.alert(successMsg);
-      } catch { /* ignore */ }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Password reset failed.";
       setLocalError(msg);
-      try { window.alert(msg); } catch { /* ignore */ }
     } finally {
       setIsResetSubmitting(false);
     }
@@ -1045,7 +1030,7 @@ export default function LandingPage() {
                   <button
                     key={r}
                     type="button"
-                    onClick={() => { setSelectedRole(r); setLocalError(null); }}
+                    onClick={() => { setSelectedRole(r); setLocalError(null); clearError(); }}
                     style={{
                       ...landingStyles.modalRoleTab,
                       ...(selectedRole === r ? landingStyles.modalRoleTabActive : {}),
@@ -1084,7 +1069,7 @@ export default function LandingPage() {
             }}>
               <button
                 type="button"
-                onClick={() => { setAuthMode("signin"); setLocalError(null); clearError(); }}
+                onClick={() => { setAuthMode("signin"); setLocalError(null); setLocalSuccess(null); clearError(); }}
                 style={{
                   flex: 1,
                   padding: "8px",
@@ -1103,7 +1088,7 @@ export default function LandingPage() {
               </button>
               <button
                 type="button"
-                onClick={() => { setAuthMode("signup"); setLocalError(null); clearError(); }}
+                onClick={() => { setAuthMode("signup"); setLocalError(null); setLocalSuccess(null); clearError(); }}
                 style={{
                   flex: 1,
                   padding: "8px",

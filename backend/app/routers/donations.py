@@ -70,12 +70,19 @@ async def create_donation(
 
 @router.get("/", response_model=list[DonationResponse])
 def list_donations(
+    status: str | None = None,
+    donor_id: int | None = None,
     skip: int = 0,
     limit: int = Query(default=50, le=100),
     db: Session = Depends(get_db),
 ):
     """List all donations with pagination."""
-    donations = db.query(Donation).offset(skip).limit(limit).all()
+    query = db.query(Donation)
+    if status is not None:
+        query = query.filter(Donation.status == status)
+    if donor_id is not None:
+        query = query.filter(Donation.donor_id == donor_id)
+    donations = query.offset(skip).limit(limit).all()
     return donations
 
 

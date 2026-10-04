@@ -1,7 +1,7 @@
 {
   "donor1@example.com": {
     "email": "donor1@example.com",
-    "hashed_password": "fecf331030a9e7afe15f34637aecc7d3$73f7b29cac8983c51ab927580300275b95e5957ed96995a5c3e75c83bbf4ed84",
+    "hashed_password": "89fc5d2eb7d8538a612d983aa0dc41ee$adfc29b834c50419f11d398a9237753b12afea9d39bf9ee98c2b6f5f0f94a656",
     "name": "Sunshine Bakery",
     "role": "donor",
     "phone": "+919876543210",
@@ -11,20 +11,20 @@
   },
   "testvol1@example.com": {
     "email": "testvol1@example.com",
-    "hashed_password": "99db5f436bdcb122b107092a991ac830$1e8bc6ba249824a99565f262575a0f7e4e39625da4fa22a55d953eb34db7830c",
+    "hashed_password": "9a5e231aec2050f7d29207f682263153$e2f40fee01ae29fc19f2ab9f28db2c7b68aa3a66f14b5cf513cb06c648331b6f",
     "name": "Volunteer One",
     "role": "volunteer",
-    "phone": "+917585914227",
+    "phone": "+915628835480",
     "org_name": null,
     "address": null,
     "language_pref": "en"
   },
   "testvol2@example.com": {
     "email": "testvol2@example.com",
-    "hashed_password": "b5ddf865c8509ae42dd47bcd51e2f3f5$3f17375eaf51217b28a28568bb9de4afe3577b7059a17157151fdb51988f5a44",
+    "hashed_password": "7428b6cfbac0534ceeedb47e4c1bf227$5331dca52e7bb1cd08c55a7dfdf4c09c29ae16f5afa02cfe443ffc415cf04320",
     "name": "Volunteer Two",
     "role": "volunteer",
-    "phone": "+910405628911",
+    "phone": "+914542939034",
     "org_name": null,
     "address": null,
     "language_pref": "en"

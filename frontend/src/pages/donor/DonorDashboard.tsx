@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type FormEvent } from "react";
+import { useState, useEffect, useCallback, useRef, type FormEvent } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../../contexts/AuthContext";
 import { apiFetch } from "../../config/api";
@@ -35,6 +35,7 @@ export default function DonorDashboard() {
   const [detectingLocation, setDetectingLocation] = useState(false);
   const [foodPhoto, setFoodPhoto] = useState<string | null>(null);
   const [photoUploading, setPhotoUploading] = useState(false);
+  const manuallyPinned = useRef(false);
 
   // Client-side auto-downsampling for fast, lightweight base64 photo storage
   const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -48,8 +49,16 @@ export default function DonorDashboard() {
 
     setPhotoUploading(true);
     const reader = new FileReader();
+    reader.onerror = () => {
+      setPhotoUploading(false);
+      setError("Failed to read image file.");
+    };
     reader.onload = (event) => {
       const img = new Image();
+      img.onerror = () => {
+        setPhotoUploading(false);
+        setError("Failed to process image.");
+      };
       img.onload = () => {
         const canvas = document.createElement("canvas");
         const MAX_SIZE = 800;
@@ -85,7 +94,7 @@ export default function DonorDashboard() {
 
   // Automatically update pickup coordinates when GPS/IP auto-detection succeeds on mount
   useEffect(() => {
-    if (lat && lng) {
+    if (lat && lng && !manuallyPinned.current) {
       setPickupLat(lat);
       setPickupLng(lng);
     }
@@ -125,8 +134,8 @@ export default function DonorDashboard() {
       setMyDonations(
         donations.filter((d) => d.donor_id === appUser?.id),
       );
-    } catch {
-      // Silently fail — non-critical
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load donations");
     }
   }, [appUser?.id, token]);
 
@@ -172,6 +181,11 @@ export default function DonorDashboard() {
 
     if (!foodType.trim() || !quantity) {
       setError("Please fill in all fields");
+      return;
+    }
+
+    if (!expiryHours || Number(expiryHours) <= 0) {
+      setError("Please specify a valid number of hours for expiry");
       return;
     }
 
@@ -1156,6 +1170,7 @@ export default function DonorDashboard() {
               <LocationPicker
                 position={{ lat: pickupLat, lng: pickupLng }}
                 onPositionChange={(newLat, newLng) => {
+                  manuallyPinned.current = true;
                   setPickupLat(newLat);
                   setPickupLng(newLng);
                 }}
@@ -1187,9 +1202,10 @@ const statsCardStyle: React.CSSProperties = {
 const statusColors: Record<string, string> = {
   available: "#4caf50",
   claimed: "#2196f3",
-  picked_up: "#ff9800",
-  delivered: "#9c27b0",
-  expired: "#f44336",
+  picked_up: "#f59e0b",
+  delivered: "#4caf50",
+  expired: "#9e9e9e",
+  cancelled: "#f44336",
 };
 
 const styles = {

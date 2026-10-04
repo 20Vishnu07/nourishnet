@@ -15,7 +15,8 @@ export default function LoginPage() {
   const { login, register, verifyAndLogin, error, clearError, isLoading, savedAccounts, removeSavedAccount } = useAuth();
 
   const initialRole = (searchParams.get("role") as UserRole) || "donor";
-  const initialMode = (searchParams.get("mode") as AuthMode) || "signin";
+  const rawMode = searchParams.get("mode") as AuthMode;
+  const initialMode = ["signin", "signup", "forgot"].includes(rawMode) ? rawMode : "signin";
 
   const [mode, setMode] = useState<AuthMode>(initialMode);
   const [email, setEmail] = useState("");
@@ -57,7 +58,6 @@ export default function LoginPage() {
     if (!cleanEmail || !password) {
       const err = "⚠️ Please enter both your email ID and password.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
@@ -81,7 +81,6 @@ export default function LoginPage() {
       }
 
       setLocalError(errMsg);
-      try { window.alert(errMsg); } catch { /* ignore */ }
     }
   };
 
@@ -93,19 +92,16 @@ export default function LoginPage() {
     if (!name.trim()) {
       const err = "⚠️ Please enter your name.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
     if (!email.trim() || !email.includes("@")) {
       const err = "⚠️ Please enter a valid email address.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
     if (!password || password.length < 6) {
       const err = "⚠️ Password must be at least 6 characters.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
@@ -122,13 +118,16 @@ export default function LoginPage() {
         language_pref: i18n.language || "en",
       }, true);
 
-      sessionStorage.setItem("account_created", "true");
-      try {
-        window.alert("Account Created Successfully");
-      } catch { /* ignore */ }
-
-      // Directly enter account on sign-up without needing to sign in again!
-      navigate("/dashboard", { replace: true });
+      if (role === "donor" || role === "ngo") {
+        setSignupSuccessData({
+          role: role,
+          email: email.trim().toLowerCase(),
+          name: name.trim(),
+        });
+      } else {
+        sessionStorage.setItem("account_created", "true");
+        navigate("/dashboard", { replace: true });
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Registration failed";
       let errMsg = msg;
@@ -139,9 +138,6 @@ export default function LoginPage() {
         errMsg = "⚠️ This email ID is already registered. Please switch to Sign In or use another email.";
       }
       setLocalError(errMsg);
-      try {
-        window.alert(errMsg);
-      } catch { /* ignore */ }
     } finally {
       setIsRegistering(false);
     }
@@ -158,7 +154,6 @@ export default function LoginPage() {
     if (!cleanEmail || !cleanEmail.includes("@")) {
       const err = "⚠️ Please enter a valid registered email address.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
@@ -178,13 +173,9 @@ export default function LoginPage() {
       }
       const successMsg = `✅ Verification code generated for ${cleanEmail}!`;
       setLocalSuccess(successMsg);
-      try {
-        window.alert(`✅ Password Reset Code: ${res.reset_code}\n\nPlease enter this 6-digit code and your new password to reset.`);
-      } catch { /* ignore */ }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to generate reset code.";
       setLocalError(msg);
-      try { window.alert(msg); } catch { /* ignore */ }
     } finally {
       setIsResetSubmitting(false);
     }
@@ -202,20 +193,17 @@ export default function LoginPage() {
       const err = "⚠️ No active recovery request found. Please request a new verification code.";
       setLocalError(err);
       setResetStep(1);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
     if (!resetCode.trim()) {
       const err = "⚠️ Please enter the 6-digit verification code.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
     if (!newPassword || newPassword.length < 6) {
       const err = "⚠️ New password must be at least 6 characters long.";
       setLocalError(err);
-      try { window.alert(err); } catch { /* ignore */ }
       return;
     }
 
@@ -239,13 +227,9 @@ export default function LoginPage() {
       setRecoveryEmail("");
       setResetCode("");
       setNewPassword("");
-      try {
-        window.alert(successMsg);
-      } catch { /* ignore */ }
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Password reset failed.";
       setLocalError(msg);
-      try { window.alert(msg); } catch { /* ignore */ }
     } finally {
       setIsResetSubmitting(false);
     }

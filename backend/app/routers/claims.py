@@ -39,7 +39,7 @@ async def create_claim(claim: ClaimCreate, db: Session = Depends(get_db)):
         db.query(Claim)
         .filter(
             Claim.donation_id == claim.donation_id,
-            Claim.status.not_in([ClaimStatus.cancelled]),
+            Claim.status.notin_([ClaimStatus.cancelled]),
         )
         .first()
     )
@@ -99,7 +99,7 @@ def list_claims(
         query = query.filter(
             Claim.needs_volunteer.is_(True),
             Claim.volunteer_id.is_(None),
-            Claim.status.not_in([ClaimStatus.cancelled, ClaimStatus.delivered]),
+            Claim.status.notin_([ClaimStatus.cancelled, ClaimStatus.delivered]),
         )
     else:
         if ngo_id is not None:

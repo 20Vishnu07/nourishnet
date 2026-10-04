@@ -77,18 +77,21 @@ export default function NGODashboard() {
     try {
       let result: Donation[] = [];
       if (isRegional || radiusKm >= 500) {
-        result = await apiFetch<Donation[]>("/donations/?status=available", { token });
+        const raw = await apiFetch<Donation[]>("/donations/?status=available", { token });
+        result = raw.filter(d => d.status === "available");
       } else {
-        result = await apiFetch<Donation[]>(
+        const raw = await apiFetch<Donation[]>(
           `/donations/nearby?lat=${qLat}&lng=${qLng}&radius_km=${radiusKm}`,
           { token },
         );
+        result = raw.filter(d => d.status === "available");
         // Smart fast detection: If local radius yielded 0 donations, automatically check regional surplus
         // so NGO instantly sees any active donations
         if (result.length === 0) {
           const all = await apiFetch<Donation[]>("/donations/?status=available", { token });
-          if (all.length > 0) {
-            result = all;
+          const allFiltered = all.filter(d => d.status === "available");
+          if (allFiltered.length > 0) {
+            result = allFiltered;
             setShowAllRegional(true);
             setLiveNotification("💡 Showing all active regional food surplus so you don't miss any meals!");
           }
@@ -111,7 +114,7 @@ export default function NGODashboard() {
         setRadarLat(coords.lat);
         setRadarLng(coords.lng);
         setLiveNotification(
-          `🎯 Live GPS locked (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}) - Accuracy: ~${Math.round(coords.accuracy || 25)}m`
+          `🎯 Live GPS locked (${coords.lat?.toFixed(4) ?? 'N/A'}, ${coords.lng?.toFixed(4) ?? 'N/A'}) - Accuracy: ~${Math.round(coords.accuracy || 25)}m`
         );
         await loadNearby(coords.lat, coords.lng);
       }
@@ -575,32 +578,50 @@ export default function NGODashboard() {
                             padding: "3px 8px",
                             borderRadius: "12px",
                             background:
-                              claim.status === "claimed"
+                              claim.status === "pending"
                                 ? "#eff6ff"
+                                : claim.status === "assigned"
+                                ? "#fef3c7"
                                 : claim.status === "picked_up"
                                 ? "#fffbeb"
+                                : claim.status === "cancelled"
+                                ? "#fee2e2"
                                 : "#ecfdf5",
                             color:
-                              claim.status === "claimed"
+                              claim.status === "pending"
                                 ? "#1e40af"
+                                : claim.status === "assigned"
+                                ? "#b45309"
                                 : claim.status === "picked_up"
                                 ? "#b45309"
+                                : claim.status === "cancelled"
+                                ? "#991b1b"
                                 : "#065f46",
                             border: `1px solid ${
-                              claim.status === "claimed"
+                              claim.status === "pending"
                                 ? "#bfdbfe"
+                                : claim.status === "assigned"
+                                ? "#fde68a"
                                 : claim.status === "picked_up"
                                 ? "#fde68a"
+                                : claim.status === "cancelled"
+                                ? "#fecaca"
                                 : "#a7f3d0"
                             }`,
                             textTransform: "capitalize",
                           }}
                         >
-                          {claim.status === "claimed"
+                          {claim.status === "pending"
                             ? "🔵 Order Reserved"
+                            : claim.status === "assigned"
+                            ? "🚗 Courier Assigned"
                             : claim.status === "picked_up"
                             ? "🚗 Courier In Transit"
-                            : "✅ Delivered"}
+                            : claim.status === "delivered"
+                            ? "✅ Delivered"
+                            : claim.status === "cancelled"
+                            ? "❌ Cancelled"
+                            : claim.status}
                         </span>
                       </div>
                       <div style={{ fontSize: "0.85rem", color: "#475569" }}>
@@ -609,10 +630,12 @@ export default function NGODashboard() {
                       {claim.volunteer ? (
                         <div style={{ fontSize: "0.8rem", color: "#0284c7", marginTop: "4px", fontWeight: 600 }}>
                           🚗 Courier: {claim.volunteer.name}{" "}
-                          {claim.volunteer.phone && (
+                          {claim.volunteer.phone ? (
                             <a href={`tel:${claim.volunteer.phone}`} style={{ color: "#0284c7", marginLeft: "4px" }}>
                               📞 {claim.volunteer.phone}
                             </a>
+                          ) : (
+                            <span style={{ color: "#64748b", marginLeft: "4px" }}>No phone provided</span>
                           )}
                         </div>
                       ) : (
@@ -750,7 +773,7 @@ export default function NGODashboard() {
             borderRadius: "8px",
             border: isGpsPrecise ? "1px solid #a7f3d0" : isAutoDetected ? "1px solid #bae6fd" : "1px solid #e2e8f0",
           }}>
-            📍 {isGpsPrecise ? `Exact Satellite GPS (~${Math.round(accuracy || 20)}m)` : isAutoDetected ? "Auto-Detected Area" : "Radar"}: {radarLat.toFixed(4)}, {radarLng.toFixed(4)}
+            📍 {isGpsPrecise ? `Exact Satellite GPS (~${Math.round(accuracy || 20)}m)` : isAutoDetected ? "Auto-Detected Area" : "Radar"}: {radarLat?.toFixed(4) ?? 'N/A'}, {radarLng?.toFixed(4) ?? 'N/A'}
           </span>
         </div>
 
@@ -923,7 +946,7 @@ export default function NGODashboard() {
               ⏰ <strong>{t("ngo.expires")}:</strong> {new Date(selectedDonation.expiry_time).toLocaleString()}
             </div>
             <div>
-              📍 <strong>{t("ngo.pickupCoordinates")}:</strong> {selectedDonation.pickup_lat.toFixed(4)}, {selectedDonation.pickup_lng.toFixed(4)}
+              📍 <strong>{t("ngo.pickupCoordinates")}:</strong> {selectedDonation.pickup_lat?.toFixed(4) ?? 'N/A'}, {selectedDonation.pickup_lng?.toFixed(4) ?? 'N/A'}
               <a
                 href={`https://www.google.com/maps/search/?api=1&query=${selectedDonation.pickup_lat},${selectedDonation.pickup_lng}`}
                 target="_blank"
@@ -957,9 +980,13 @@ export default function NGODashboard() {
                 </div>
                 <div style={{ color: "#334155" }}>
                   <strong>{t("ngo.donorPhone")}:</strong>{" "}
-                  <a href={`tel:${selectedDonation.donor.phone}`} style={{ color: "#0284c7", fontWeight: 600, textDecoration: "none" }}>
-                    📞 {selectedDonation.donor.phone}
-                  </a>
+                  {selectedDonation.donor.phone ? (
+                    <a href={`tel:${selectedDonation.donor.phone}`} style={{ color: "#0284c7", fontWeight: 600, textDecoration: "none" }}>
+                      📞 {selectedDonation.donor.phone}
+                    </a>
+                  ) : (
+                    <span style={{ color: "#64748b" }}>No phone provided</span>
+                  )}
                 </div>
               </div>
             )}
@@ -1148,13 +1175,17 @@ export default function NGODashboard() {
                     {donation.donor && (
                       <div>
                         👤 <strong>{t("ngo.donorDetails")}:</strong> {donation.donor.name} •{" "}
-                        <a href={`tel:${donation.donor.phone}`} style={{ color: "#0284c7", textDecoration: "none", fontWeight: 600 }}>
-                          📞 {donation.donor.phone}
-                        </a>
+                        {donation.donor.phone ? (
+                          <a href={`tel:${donation.donor.phone}`} style={{ color: "#0284c7", textDecoration: "none", fontWeight: 600 }}>
+                            📞 {donation.donor.phone}
+                          </a>
+                        ) : (
+                          <span style={{ color: "#64748b" }}>No phone provided</span>
+                        )}
                       </div>
                     )}
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
-                      <span>📍 <strong>{t("ngo.pickupCoordinates")}:</strong> {donation.pickup_lat.toFixed(4)}, {donation.pickup_lng.toFixed(4)}</span>
+                      <span>📍 <strong>{t("ngo.pickupCoordinates")}:</strong> {donation.pickup_lat?.toFixed(4) ?? 'N/A'}, {donation.pickup_lng?.toFixed(4) ?? 'N/A'}</span>
                       <a
                         href={`https://www.google.com/maps/search/?api=1&query=${donation.pickup_lat},${donation.pickup_lng}`}
                         target="_blank"
@@ -1234,13 +1265,15 @@ export default function NGODashboard() {
                             <div style={{ fontWeight: 700, color: "#0f172a", fontSize: "0.9rem" }}>
                               Volunteer Driver: {claim.volunteer?.name || "Assigned Volunteer Courier"}
                             </div>
-                            {claim.volunteer?.phone && (
-                              <div style={{ fontSize: "0.8rem" }}>
+                            <div style={{ fontSize: "0.8rem" }}>
+                              {claim.volunteer?.phone ? (
                                 <a href={`tel:${claim.volunteer.phone}`} style={{ color: "#d97706", fontWeight: 700, textDecoration: "none" }}>
                                   📞 Call Courier: {claim.volunteer.phone}
                                 </a>
-                              </div>
-                            )}
+                              ) : (
+                                <span style={{ color: "#64748b" }}>No phone provided</span>
+                              )}
+                            </div>
                           </div>
                         </div>
 

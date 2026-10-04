@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
@@ -24,8 +24,15 @@ export default function DashboardPage() {
     return false;
   });
 
-  if (!appUser) return null;
 
+  useEffect(() => {
+    if (showWelcomeToast) {
+      const timer = setTimeout(() => setShowWelcomeToast(false), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showWelcomeToast]);
+
+  if (!appUser) return <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>Loading portal...</div>;
   const activeRole: UserRole = (appUser.role?.toLowerCase() as UserRole) || "donor";
 
   const roleEmoji: Record<string, string> = {
@@ -79,7 +86,7 @@ export default function DashboardPage() {
     <div style={{ ...styles.container, background: currentTheme.pageBg }}>
       <header style={{ ...styles.header, borderBottom: `2.5px solid ${currentTheme.headerBorder}` }}>
         <div style={styles.headerContent}>
-          <Link to="/" style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: "10px" }}>
+          <Link to="/dashboard" style={{ textDecoration: "none", color: "inherit", display: "flex", alignItems: "center", gap: "10px" }}>
             <span style={{ fontSize: "1.5rem" }}>🌱</span>
             <div>
               <h1 style={styles.title}>{t("common.appName")}</h1>
@@ -115,9 +122,9 @@ export default function DashboardPage() {
                   border: `1px solid ${currentTheme.border}`,
                 }}
               >
-                {appUser.name.charAt(0).toUpperCase()}
+                {(appUser?.name?.charAt(0) || "U").toUpperCase()}
               </div>
-              <span style={styles.userName}>{appUser.name}</span>
+              <span style={styles.userName}>{appUser?.name || "User"}</span>
             </div>
 
             <button onClick={logout} style={styles.logoutBtn} title="Sign out">
@@ -215,8 +222,6 @@ const styles: Record<string, React.CSSProperties> = {
     backdropFilter: "blur(10px)",
     boxShadow: shadows.sm,
     borderBottom: `1px solid ${colors.border}`,
-    position: "sticky" as const,
-    top: 0,
     zIndex: 100,
   },
   headerContent: {

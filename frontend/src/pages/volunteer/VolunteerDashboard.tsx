@@ -329,6 +329,12 @@ export default function VolunteerDashboard() {
         body: { status: newStatus, delivery_photo: deliveryPhoto || undefined },
       });
       setSuccess(t("volunteer.claimUpdated", { status: newStatus }));
+      if (newStatus === "delivered") {
+        blastPaperConfetti({
+          particleCount: 150,
+          colors: ["#10b981", "#34d399", "#059669"],
+        });
+      }
       setDeliveryPhotoMap((prev) => {
         const copy = { ...prev };
         delete copy[claimId];
@@ -350,8 +356,8 @@ export default function VolunteerDashboard() {
 
     // Calculate simulated path between user and donor/destination
     const tRatio = Math.min(nextStep * 0.2, 1.0);
-    const targetLat = claim.status === "picked_up" ? userLat : donation.pickup_lat;
-    const targetLng = claim.status === "picked_up" ? userLng : donation.pickup_lng;
+    const targetLat = claim.status === "picked_up" ? donation.pickup_lat + 0.01 : donation.pickup_lat;
+    const targetLng = claim.status === "picked_up" ? donation.pickup_lng + 0.01 : donation.pickup_lng;
 
     const simLat = userLat + (targetLat - userLat) * tRatio;
     const simLng = userLng + (targetLng - userLng) * tRatio;
@@ -367,7 +373,7 @@ export default function VolunteerDashboard() {
   };
 
   const completedClaims = claims.filter((c) => c.status === "delivered");
-  const activeMissions = claims.filter((c) => c.status === "claimed" || c.status === "picked_up");
+  const activeMissions = claims.filter((c) => c.status === "assigned" || c.status === "picked_up");
   const primaryActiveMission = activeMissions[0];
   const totalKgTransported = completedClaims.reduce((acc, c) => {
     const d = donationDetails[c.donation_id];
@@ -1381,9 +1387,9 @@ export default function VolunteerDashboard() {
 }
 
 const statusColors: Record<string, string> = {
-  pending: "#ff9800",
-  assigned: "#2196f3",
-  picked_up: "#9c27b0",
+  pending: "#2196f3",
+  assigned: "#ff9800",
+  picked_up: "#f59e0b",
   delivered: "#4caf50",
   cancelled: "#f44336",
 };

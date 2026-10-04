@@ -351,8 +351,9 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* 2. HERO SECTION */}
-      <section style={landingStyles.heroSection}>
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", width: "100%" }}>
+        {/* 2. HERO SECTION */}
+        <section style={landingStyles.heroSection}>
         <div style={landingStyles.heroContainer}>
           {/* Left Hero Column */}
           <div style={landingStyles.heroLeft}>
@@ -841,6 +842,7 @@ export default function LandingPage() {
           </button>
         </div>
       </section>
+      </main>
 
       {/* 8. FOOTER */}
       <footer style={landingStyles.footer}>

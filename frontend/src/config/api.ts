@@ -25,6 +25,11 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   });
 
   if (!response.ok) {
+    if (response.status === 401) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new Event("auth_unauthorized"));
+      }
+    }
     const error = await response.json().catch(() => ({ detail: "Unknown error" }));
     throw new Error(error.detail || `API error: ${response.status}`);
   }

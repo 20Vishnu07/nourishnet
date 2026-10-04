@@ -172,12 +172,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, savedAccounts: getLocalSavedAccounts() }));
   }, []);
 
-  // Listen for Firebase auth state changes
+  // Listen for Firebase auth state changes and unauthorized API calls
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setState((prev) => ({ ...prev, firebaseUser: user }));
     });
-    return unsubscribe;
+
+    const handleUnauthorized = () => {
+      localStorage.removeItem("nourishnet_token");
+      localStorage.removeItem("nourishnet_user");
+      setState((prev) => ({
+        ...prev,
+        token: null,
+        appUser: null,
+      }));
+    };
+    window.addEventListener("auth_unauthorized", handleUnauthorized);
+
+    // Startup background check to ensure token is still valid on backend
+    const currentToken = localStorage.getItem("nourishnet_token");
+    if (currentToken) {
+      apiFetch("/auth/me", { token: currentToken }).catch(() => {
+        // The 401 will trigger auth_unauthorized automatically
+      });
+    }
+
+    return () => {
+      unsubscribe();
+      window.removeEventListener("auth_unauthorized", handleUnauthorized);
+    };
   }, []);
 
   const login = useCallback(async (email: string, password: string, role?: UserRole) => {

@@ -324,31 +324,32 @@ export default function LandingPage() {
             <LanguageSwitcher />
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "nowrap" }}>
               {/* Always provide Sign In & Sign Up buttons */}
-              <button
-                onClick={() => openSignIn()}
-                style={{
-                  ...landingStyles.navSignInBtn,
-                  backgroundColor: "#ffffff",
-                  color: colors.primary,
-                  border: `1.5px solid ${colors.primary}`,
-                }}
-              >
-                {t("auth.signIn")}
-              </button>
-              <button
-                onClick={() => openSignUp()}
-                style={{
-                  ...landingStyles.navSignInBtn,
-                  backgroundColor: colors.primary,
-                  color: "#ffffff",
-                  border: `1.5px solid ${colors.primary}`,
-                }}
-              >
-                {t("auth.signUp")}
-              </button>
-
-              {/* If already logged in, also offer direct portal access and logout */}
-              {appUser && (
+              {!appUser ? (
+                <>
+                  <button
+                    onClick={() => openSignIn()}
+                    style={{
+                      ...landingStyles.navSignInBtn,
+                      backgroundColor: "#ffffff",
+                      color: colors.primary,
+                      border: `1.5px solid ${colors.primary}`,
+                    }}
+                  >
+                    {t("auth.signIn")}
+                  </button>
+                  <button
+                    onClick={() => openSignUp()}
+                    style={{
+                      ...landingStyles.navSignInBtn,
+                      backgroundColor: colors.primary,
+                      color: "#ffffff",
+                      border: `1.5px solid ${colors.primary}`,
+                    }}
+                  >
+                    {t("auth.signUp")}
+                  </button>
+                </>
+              ) : (
                 <>
                   <button
                     onClick={() => navigate("/dashboard")}
@@ -437,8 +438,7 @@ export default function LandingPage() {
                       padding: "7px 6px",
                       borderRadius: "8px",
                       fontWeight: 700,
-                      fontSize: "0.78rem",
-                      cursor: "pointer",
+                      fontSize: "0.78rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
                     }}
                   >
                     Sign Up
@@ -453,8 +453,7 @@ export default function LandingPage() {
                       padding: "7px 6px",
                       borderRadius: "8px",
                       fontWeight: 700,
-                      fontSize: "0.78rem",
-                      cursor: "pointer",
+                      fontSize: "0.78rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
                     }}
                   >
                     Sign In
@@ -486,8 +485,7 @@ export default function LandingPage() {
                       padding: "7px 6px",
                       borderRadius: "8px",
                       fontWeight: 700,
-                      fontSize: "0.78rem",
-                      cursor: "pointer",
+                      fontSize: "0.78rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
                     }}
                   >
                     Sign Up
@@ -502,8 +500,7 @@ export default function LandingPage() {
                       padding: "7px 6px",
                       borderRadius: "8px",
                       fontWeight: 700,
-                      fontSize: "0.78rem",
-                      cursor: "pointer",
+                      fontSize: "0.78rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
                     }}
                   >
                     Sign In
@@ -535,8 +532,7 @@ export default function LandingPage() {
                       padding: "7px 6px",
                       borderRadius: "8px",
                       fontWeight: 700,
-                      fontSize: "0.78rem",
-                      cursor: "pointer",
+                      fontSize: "0.78rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
                     }}
                   >
                     Sign Up
@@ -551,8 +547,7 @@ export default function LandingPage() {
                       padding: "7px 6px",
                       borderRadius: "8px",
                       fontWeight: 700,
-                      fontSize: "0.78rem",
-                      cursor: "pointer",
+                      fontSize: "0.78rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
                     }}
                   >
                     Sign In

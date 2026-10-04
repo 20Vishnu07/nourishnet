@@ -9,7 +9,7 @@ import { apiFetch, warmUpBackend } from "../config/api";
 export default function LandingPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { login, register, verifyAndLogin, error, clearError, isLoading, appUser, logout } = useAuth();
+  const { login, register, verifyAndLogin, error, clearError, isLoading, appUser } = useAuth();
 
   // Auth modal states
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -324,64 +324,28 @@ export default function LandingPage() {
             <LanguageSwitcher />
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "nowrap" }}>
               {/* Always provide Sign In & Sign Up buttons */}
-              {!appUser ? (
-                <>
-                  <button
-                    onClick={() => openSignIn()}
-                    style={{
-                      ...landingStyles.navSignInBtn,
-                      backgroundColor: "#ffffff",
-                      color: colors.primary,
-                      border: `1.5px solid ${colors.primary}`,
-                    }}
-                  >
-                    {t("auth.signIn")}
-                  </button>
-                  <button
-                    onClick={() => openSignUp()}
-                    style={{
-                      ...landingStyles.navSignInBtn,
-                      backgroundColor: colors.primary,
-                      color: "#ffffff",
-                      border: `1.5px solid ${colors.primary}`,
-                    }}
-                  >
-                    {t("auth.signUp")}
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => navigate("/dashboard")}
-                    style={{
-                      ...landingStyles.navSignInBtn,
-                      backgroundColor: appUser.role === "donor" ? "#059669" : appUser.role === "ngo" ? "#0284c7" : "#d97706",
-                      color: "#ffffff",
-                      border: "none",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "6px",
-                      fontWeight: 700,
-                    }}
-                    title="Go to your active portal dashboard"
-                  >
-                    <span>{appUser.role === "donor" ? "🍲" : appUser.role === "ngo" ? "🏢" : "🚗"}</span>
-                    <span>My {appUser.role === "donor" ? "Donor" : appUser.role === "ngo" ? "NGO" : "Volunteer"} Portal →</span>
-                  </button>
-                  <button
-                    onClick={logout}
-                    style={{
-                      ...landingStyles.navSignInBtn,
-                      backgroundColor: "transparent",
-                      color: colors.textMuted,
-                      border: `1.5px solid ${colors.border}`,
-                    }}
-                    title="Sign out of current account"
-                  >
-                    {t("common.logout")}
-                  </button>
-                </>
-              )}
+              <button
+                onClick={() => appUser ? navigate("/dashboard") : openSignIn()}
+                style={{
+                  ...landingStyles.navSignInBtn,
+                  backgroundColor: "#ffffff",
+                  color: colors.primary,
+                  border: `1.5px solid ${colors.primary}`,
+                }}
+              >
+                {t("auth.signIn")}
+              </button>
+              <button
+                onClick={() => appUser ? navigate("/dashboard") : openSignUp()}
+                style={{
+                  ...landingStyles.navSignInBtn,
+                  backgroundColor: colors.primary,
+                  color: "#ffffff",
+                  border: `1.5px solid ${colors.primary}`,
+                }}
+              >
+                {t("auth.signUp")}
+              </button>
             </div>
           </div>
         </div>
@@ -429,7 +393,7 @@ export default function LandingPage() {
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
                   <button
-                    onClick={() => openAuthWithRole("donor", "signup")}
+                    onClick={() => appUser ? navigate("/dashboard") : openAuthWithRole("donor", "signup")}
                     style={{
                       flex: 1,
                       background: "#059669",
@@ -438,25 +402,10 @@ export default function LandingPage() {
                       padding: "7px 6px",
                       borderRadius: "8px",
                       fontWeight: 700,
-                      fontSize: "0.78rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
+                      fontSize: "0.85rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
                     }}
                   >
                     Sign Up
-                  </button>
-                  <button
-                    onClick={() => openAuthWithRole("donor", "signin")}
-                    style={{
-                      flex: 1,
-                      background: "#ffffff",
-                      color: "#059669",
-                      border: "1.5px solid #059669",
-                      padding: "7px 6px",
-                      borderRadius: "8px",
-                      fontWeight: 700,
-                      fontSize: "0.78rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
-                    }}
-                  >
-                    Sign In
                   </button>
                 </div>
               </div>
@@ -476,7 +425,7 @@ export default function LandingPage() {
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
                   <button
-                    onClick={() => openAuthWithRole("ngo", "signup")}
+                    onClick={() => appUser ? navigate("/dashboard") : openAuthWithRole("ngo", "signup")}
                     style={{
                       flex: 1,
                       background: "#0284c7",
@@ -485,25 +434,10 @@ export default function LandingPage() {
                       padding: "7px 6px",
                       borderRadius: "8px",
                       fontWeight: 700,
-                      fontSize: "0.78rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
+                      fontSize: "0.85rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
                     }}
                   >
                     Sign Up
-                  </button>
-                  <button
-                    onClick={() => openAuthWithRole("ngo", "signin")}
-                    style={{
-                      flex: 1,
-                      background: "#ffffff",
-                      color: "#0284c7",
-                      border: "1.5px solid #0284c7",
-                      padding: "7px 6px",
-                      borderRadius: "8px",
-                      fontWeight: 700,
-                      fontSize: "0.78rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
-                    }}
-                  >
-                    Sign In
                   </button>
                 </div>
               </div>
@@ -523,7 +457,7 @@ export default function LandingPage() {
                 </div>
                 <div style={{ display: "flex", gap: "6px" }}>
                   <button
-                    onClick={() => openAuthWithRole("volunteer", "signup")}
+                    onClick={() => appUser ? navigate("/dashboard") : openAuthWithRole("volunteer", "signup")}
                     style={{
                       flex: 1,
                       background: "#d97706",
@@ -532,25 +466,10 @@ export default function LandingPage() {
                       padding: "7px 6px",
                       borderRadius: "8px",
                       fontWeight: 700,
-                      fontSize: "0.78rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
+                      fontSize: "0.85rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
                     }}
                   >
                     Sign Up
-                  </button>
-                  <button
-                    onClick={() => openAuthWithRole("volunteer", "signin")}
-                    style={{
-                      flex: 1,
-                      background: "#ffffff",
-                      color: "#d97706",
-                      border: "1.5px solid #d97706",
-                      padding: "7px 6px",
-                      borderRadius: "8px",
-                      fontWeight: 700,
-                      fontSize: "0.78rem", cursor: "pointer", whiteSpace: "normal", wordBreak: "break-word", lineHeight: 1.2,
-                    }}
-                  >
-                    Sign In
                   </button>
                 </div>
               </div>
